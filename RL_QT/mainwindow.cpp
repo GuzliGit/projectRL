@@ -1,11 +1,17 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "createproj_dialog.h"
 
 #include <QDockWidget>
 #include <QLayout>
+#include <QDialog>
+#include <QMessageBox>
+#include <QDebug>
+#include <QPainter>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
+    , scene(new RL_scene(0, 0, SCALE_FACTOR, this))
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
@@ -30,8 +36,9 @@ void MainWindow::setupWidgets()
     addDockWidget(Qt::RightDockWidgetArea, settings_dock);
 
     editor_dock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    log_dock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    settings_dock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
 
-    ui->environment->setScene(new QGraphicsScene(this));
     setCentralWidget(ui->environment);
 }
 
@@ -39,3 +46,31 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
+
+void MainWindow::on_create_proj_triggered()
+{
+    CreateProj_Dialog w(BLOCK_LIMIT, this);
+
+    if (w.exec() == QDialog::Accepted)
+    {
+        if (scene->width() > 0)
+        {
+            QMessageBox::StandardButton reply;
+            reply = QMessageBox::question(this, "Подтверждение", "Сохранить изменения и перейти к новому проекту?");
+
+            if (reply == QMessageBox::Yes)
+            {
+                qDebug() << "Сохранение текущего проекта и создание нового";
+                return;
+            }
+            else
+                return;
+        }
+
+        scene->setSceneRect(0, 0, w.get_width() * SCALE_FACTOR, w.get_height() * SCALE_FACTOR);
+
+        ui->environment->setScene(scene);
+        scene->fill_with_empty_cells();
+    }
+}
+

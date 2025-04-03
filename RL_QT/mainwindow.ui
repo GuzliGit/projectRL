@@ -56,7 +56,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QTextEdit" name="log_panel">
+   <widget class="QPlainTextEdit" name="log_panel">
     <property name="geometry">
      <rect>
       <x>190</x>
@@ -80,8 +80,8 @@
     <property name="title">
      <string>Файл</string>
     </property>
-    <addaction name="action"/>
-    <addaction name="action_2"/>
+    <addaction name="create_proj"/>
+    <addaction name="edit_proj"/>
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
@@ -104,12 +104,12 @@
     <bool>false</bool>
    </attribute>
   </widget>
-  <action name="action">
+  <action name="create_proj">
    <property name="text">
     <string>Создать</string>
    </property>
   </action>
-  <action name="action_2">
+  <action name="edit_proj">
    <property name="text">
     <string>Открыть</string>
    </property>

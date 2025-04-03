@@ -9,13 +9,20 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    cellitem.cpp \
+    createproj_dialog.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    rl_scene.cpp
 
 HEADERS += \
-    mainwindow.h
+    cellitem.h \
+    createproj_dialog.h \
+    mainwindow.h \
+    rl_scene.h
 
 FORMS += \
+    createproj_dialog.ui \
     mainwindow.ui
 
 # Default rules for deployment.

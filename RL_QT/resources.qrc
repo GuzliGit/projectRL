@@ -1,3 +1,5 @@
 <RCC>
-    <qresource prefix="/img"/>
+    <qresource prefix="/img">
+        <file>img/EmptyCell.svg</file>
+    </qresource>
 </RCC>
