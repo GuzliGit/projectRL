@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include <QSplitter>
+#include <QDockWidget>
 #include <QLayout>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -14,30 +14,25 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::setupWidgets()
 {
-    QSplitter *main_splitter = new QSplitter(Qt::Horizontal, this);
-    setCentralWidget(main_splitter);
+    QWidget *central_widget = new QWidget(this);
+    setCentralWidget(central_widget);
 
-    // Панель с элементами для графической среды (подобие панели виджетов)
-    QVBoxLayout *left_layout = new QVBoxLayout(ui->editor_panel);
+    QDockWidget *editor_dock = new QDockWidget("Редактор", this);
+    QDockWidget *log_dock = new QDockWidget("Логи", this);
+    QDockWidget *settings_dock = new QDockWidget("Настройки", this);
 
-    // Панель с графической средой и логами
-    QSplitter *center_splitter = new QSplitter(Qt::Vertical, this);
-    QVBoxLayout *center_layout = new QVBoxLayout();
+    editor_dock->setWidget(ui->editor_panel);
+    log_dock->setWidget(ui->log_panel);
+    settings_dock->setWidget(ui->rl_settings_panel);
 
-    center_layout->addWidget(ui->environment);
-    ui->environment->setScene(new QGraphicsScene());
-    center_layout->addWidget(ui->log_panel);
+    addDockWidget(Qt::LeftDockWidgetArea, editor_dock);
+    addDockWidget(Qt::BottomDockWidgetArea, log_dock);
+    addDockWidget(Qt::RightDockWidgetArea, settings_dock);
 
-    center_splitter->addWidget(ui->environment);
-    center_splitter->addWidget(ui->log_panel);
+    editor_dock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
 
-    // Панель с настройками среды и графиками обучения
-    QVBoxLayout *right_panel = new QVBoxLayout(ui->rl_settings_panel);
-
-    // // Работа со сплиттером
-    main_splitter->addWidget(ui->editor_panel);
-    main_splitter->addWidget(center_splitter);
-    main_splitter->addWidget(ui->rl_settings_panel);
+    ui->environment->setScene(new QGraphicsScene(this));
+    setCentralWidget(ui->environment);
 }
 
 MainWindow::~MainWindow()
