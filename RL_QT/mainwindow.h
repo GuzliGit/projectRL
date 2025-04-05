@@ -23,6 +23,8 @@ public:
 private slots:
     void on_create_proj_triggered();
 
+    void on_center_navigation_triggered();
+
 private:
     RL_scene *scene;
 

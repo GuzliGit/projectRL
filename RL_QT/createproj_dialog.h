@@ -22,7 +22,7 @@ private slots:
 
     void on_accept_button_clicked();
 
-    void on_text_changed();
+    void on_textChanged();
 
 private:
     int width;

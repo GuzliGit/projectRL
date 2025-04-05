@@ -103,6 +103,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="center_navigation"/>
   </widget>
   <action name="create_proj">
    <property name="text">
@@ -124,7 +125,21 @@
     <string>Повторить</string>
    </property>
   </action>
+  <action name="center_navigation">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/img/img/CenterNavigation.svg</normaloff>:/img/img/CenterNavigation.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Перейти к центру среды</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

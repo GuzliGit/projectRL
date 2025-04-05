@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/img">
         <file>img/EmptyCell.svg</file>
+        <file>img/CenterNavigation.svg</file>
     </qresource>
 </RCC>

@@ -74,3 +74,15 @@ void MainWindow::on_create_proj_triggered()
     }
 }
 
+
+void MainWindow::on_center_navigation_triggered()
+{
+    if (scene->width() == 0)
+    {
+        QMessageBox::warning(this, "Предупреждение", "Для навигации необходимо создать графическую среду!");
+        return;
+    }
+
+    ui->environment->centerOn(scene->sceneRect().center());
+}
+

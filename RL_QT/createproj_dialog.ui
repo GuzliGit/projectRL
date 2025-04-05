@@ -54,55 +54,6 @@
     <string>Отклонить</string>
    </property>
   </widget>
-  <widget class="QPlainTextEdit" name="width_edit">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>50</y>
-     <width>121</width>
-     <height>51</height>
-    </rect>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>121</width>
-     <height>51</height>
-    </size>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>121</width>
-     <height>51</height>
-    </size>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>18</pointsize>
-     <italic>false</italic>
-    </font>
-   </property>
-   <property name="layoutDirection">
-    <enum>Qt::RightToLeft</enum>
-   </property>
-   <property name="autoFillBackground">
-    <bool>false</bool>
-   </property>
-   <property name="verticalScrollBarPolicy">
-    <enum>Qt::ScrollBarAlwaysOff</enum>
-   </property>
-   <property name="horizontalScrollBarPolicy">
-    <enum>Qt::ScrollBarAlwaysOff</enum>
-   </property>
-   <property name="undoRedoEnabled">
-    <bool>true</bool>
-   </property>
-   <property name="lineWrapMode">
-    <enum>QPlainTextEdit::WidgetWidth</enum>
-   </property>
-   <property name="plainText">
-    <string/>
-   </property>
-  </widget>
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
@@ -125,7 +76,29 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QPlainTextEdit" name="height_edit">
+  <widget class="QLineEdit" name="width_edit">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>50</y>
+     <width>121</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>20</pointsize>
+     <italic>false</italic>
+    </font>
+   </property>
+   <property name="layoutDirection">
+    <enum>Qt::RightToLeft</enum>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="height_edit">
    <property name="geometry">
     <rect>
      <x>240</x>
@@ -136,30 +109,15 @@
    </property>
    <property name="font">
     <font>
-     <pointsize>18</pointsize>
+     <pointsize>20</pointsize>
      <italic>false</italic>
     </font>
    </property>
    <property name="layoutDirection">
     <enum>Qt::RightToLeft</enum>
    </property>
-   <property name="autoFillBackground">
-    <bool>false</bool>
-   </property>
-   <property name="verticalScrollBarPolicy">
-    <enum>Qt::ScrollBarAlwaysOff</enum>
-   </property>
-   <property name="horizontalScrollBarPolicy">
-    <enum>Qt::ScrollBarAlwaysOff</enum>
-   </property>
-   <property name="undoRedoEnabled">
-    <bool>true</bool>
-   </property>
-   <property name="lineWrapMode">
-    <enum>QPlainTextEdit::WidgetWidth</enum>
-   </property>
-   <property name="plainText">
-    <string/>
+   <property name="alignment">
+    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
    </property>
   </widget>
  </widget>

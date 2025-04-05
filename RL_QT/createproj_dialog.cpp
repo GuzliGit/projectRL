@@ -23,25 +23,25 @@ CreateProj_Dialog::~CreateProj_Dialog()
 
 void CreateProj_Dialog::set_parameters()
 {
-    connect(ui->width_edit, &QPlainTextEdit::textChanged, this, &CreateProj_Dialog::on_text_changed);
-    connect(ui->height_edit, &QPlainTextEdit::textChanged, this, &CreateProj_Dialog::on_text_changed);
+    connect(ui->width_edit, &QLineEdit::textChanged, this, &CreateProj_Dialog::on_textChanged);
+    connect(ui->height_edit, &QLineEdit::textChanged, this, &CreateProj_Dialog::on_textChanged);
 }
 
 int CreateProj_Dialog::get_width()
 {
-    return ui->width_edit->toPlainText().toInt();
+    return ui->width_edit->text().toInt();
 }
 
 int CreateProj_Dialog::get_height()
 {
-    return ui->height_edit->toPlainText().toInt();
+    return ui->height_edit->text().toInt();
 }
 
 bool CreateProj_Dialog::validate_accept()
 {
     bool isint1, isint2;
-    int val1 = ui->width_edit->toPlainText().toInt(&isint1);
-    int val2 = ui->height_edit->toPlainText().toInt(&isint2);
+    int val1 = ui->width_edit->text().toInt(&isint1);
+    int val2 = ui->height_edit->text().toInt(&isint2);
 
     if (!isint1 || !isint2)
     {
@@ -70,7 +70,7 @@ void CreateProj_Dialog::on_accept_button_clicked()
         this->accept();
 }
 
-void CreateProj_Dialog::on_text_changed()
+void CreateProj_Dialog::on_textChanged()
 {
     int temp = limit;
     int len_limit = 0;
@@ -79,14 +79,12 @@ void CreateProj_Dialog::on_text_changed()
         temp /= 10;
     }
 
-    QPlainTextEdit *edit = qobject_cast<QPlainTextEdit*>(sender());
-    if (edit->toPlainText().length() > len_limit) {
-        QString text = edit->toPlainText();
+    QLineEdit *edit = qobject_cast<QLineEdit*>(sender());
+    if (edit->text().length() > len_limit) {
+        QString text = edit->text();
         text.chop(text.length() - len_limit);
-        edit->setPlainText(text);
+        edit->setText(text);
 
-        QTextCursor cursor = edit->textCursor();
-        cursor.movePosition(QTextCursor::End);
-        edit->setTextCursor(cursor);
+        edit->setCursorPosition(text.length());
     }
 }
