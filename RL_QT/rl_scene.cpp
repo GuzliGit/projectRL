@@ -1,9 +1,11 @@
 #include "rl_scene.h"
 #include "cellitem.h"
+#include <QKeyEvent>
 #include <QGraphicsSceneWheelEvent>
 #include <QGraphicsView>
 #include <QCursor>
 #include <QScrollBar>
+#include <QRectF>
 
 RL_scene::RL_scene(int width, int height, int scale_factor, QObject* parent) : QGraphicsScene(parent)
 {
@@ -25,6 +27,7 @@ void RL_scene::fill_with_empty_cells()
             CellItem *cell = new CellItem();
             cell->setPos(j * cell_width, i * cell_height);
             this->addItem(cell);
+            all_cells.append(cell);
         }
     }
 }
@@ -48,12 +51,61 @@ void RL_scene::wheelEvent(QGraphicsSceneWheelEvent *event)
 
 void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    if (event->button() == Qt::MiddleButton)
+    if (event->button() == Qt::MiddleButton) // Навигация в среде с помощью СКМ
     {
         is_panning = true;
         QCursor c;
         c.setShape(Qt::ClosedHandCursor);
         this->views().first()->setCursor(c);
+
+        event->accept();
+    }
+    else if (event->button() == Qt::LeftButton) // Выделение клеток
+    {
+        ctrl_pressed = event->modifiers() & Qt::ControlModifier;
+        CellItem *item = dynamic_cast<CellItem*>(itemAt(event->scenePos(), QTransform()));
+
+        if (item)
+        {
+            if (!ctrl_pressed)
+            {
+                selected_cells.clear();
+
+                for (auto cell : all_cells)
+                {
+                    if (cell == item)
+                    {
+                        cell->set_selected(!cell->is_selected(), false);
+                        selected_cells.append(cell);
+                    }
+                    else
+                        cell->set_selected(false, false);
+                }
+            }
+            else
+            {
+                item->set_selected(!item->is_selected(), ctrl_pressed);
+
+                if (selected_cells.contains(item) && !item->is_selected())
+                    selected_cells.removeOne(item);
+                else if (!selected_cells.contains(item) && item->is_selected())
+                    selected_cells.append(item);
+            }
+        }
+
+        selection_start = event->scenePos();
+        selection_rect = new QGraphicsRectItem(QRectF(selection_start, QSizeF(0, 0)));
+        selection_rect->setPen(QPen(Qt::white, 1, Qt::DashLine));
+        addItem(selection_rect);
+
+        event->accept();
+    }
+    else if (event->button() == Qt::RightButton && !selection_rect)
+    {
+        for (auto cell : selected_cells)
+            cell->set_selected(false, false);
+
+        selected_cells.clear();
 
         event->accept();
     }
@@ -65,7 +117,7 @@ void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 void RL_scene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-    if (is_panning)
+    if (is_panning) // Навигация в среде с помощью СКМ
     {
         QList<QGraphicsView*> views = this->views();
         QGraphicsView *view = views.first();
@@ -77,6 +129,46 @@ void RL_scene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
         event->accept();
     }
+    else if (selection_rect) // Выделение клеток
+    {
+        QRectF rect(selection_start, event->scenePos());
+        selection_rect->setRect(rect.normalized());
+
+        if (!ctrl_pressed)
+        {
+            for (auto cell : selected_cells)
+                cell->set_selected(false, ctrl_pressed);
+
+            selected_cells.clear();
+        }
+
+        for (auto cell : all_cells)
+        {
+            bool is_intersects = rect.intersects(cell->sceneBoundingRect());
+            if (is_intersects)
+            {
+                cell->set_selected(!cell->is_selected(), ctrl_pressed);
+
+                if (selected_cells.contains(cell) && !cell->is_selected())
+                    selected_cells.removeOne(cell);
+                else if (!selected_cells.contains(cell) && cell->is_selected())
+                    selected_cells.append(cell);
+            }
+            else if (cell->selection_was_changed() && !is_intersects)
+            {
+                cell->allow_selection();
+                cell->set_selected(!cell->is_selected(), ctrl_pressed);
+                if (selected_cells.contains(cell) && !cell->is_selected())
+                    selected_cells.removeOne(cell);
+                else if (!selected_cells.contains(cell) && cell->is_selected())
+                    selected_cells.append(cell);
+
+                cell->allow_selection();
+            }
+        }
+
+        event->accept();
+    }
     else
     {
         QGraphicsScene::mouseMoveEvent(event);
@@ -85,7 +177,7 @@ void RL_scene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 void RL_scene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    if (event->button() == Qt::MiddleButton)
+    if (event->button() == Qt::MiddleButton) // Навигация в среде с помощью СКМ
     {
         is_panning = false;
         QCursor c;
@@ -93,8 +185,55 @@ void RL_scene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         this->views().first()->setCursor(c);
 
         event->accept();
-    } else
+    }
+    else if (selection_rect && Qt::LeftButton) // Выделение клеток
+    {
+        removeItem(selection_rect);
+        delete selection_rect;
+        selection_rect = nullptr;
+
+        for (auto cell : all_cells)
+        {
+            cell->allow_selection();
+        }
+
+        synchronize_animation();
+
+        // // Проверка выбора
+        // qDebug() << "New Selection\n";
+        // for (auto cell : selected_cells)
+        // {
+        //     qDebug() << cell->x() << cell->y();
+        // }
+
+        event->accept();
+    }
+    else
     {
         QGraphicsScene::mouseReleaseEvent(event);
     }
+}
+
+void RL_scene::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Control)
+    {
+        ctrl_pressed = true;
+    }
+    QGraphicsScene::keyPressEvent(event);
+}
+
+void RL_scene::keyReleaseEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Control)
+    {
+        ctrl_pressed = false;
+    }
+    QGraphicsScene::keyReleaseEvent(event);
+}
+
+void RL_scene::synchronize_animation()
+{
+    for (auto cell : selected_cells)
+        cell->reset_animation();
 }

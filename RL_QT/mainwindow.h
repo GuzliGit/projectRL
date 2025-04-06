@@ -29,6 +29,7 @@ private:
     RL_scene *scene;
 
     Ui::MainWindow *ui;
-    void setupWidgets();
+    void setup_widgets();
+    void setup_editor_panel_widgets();
 };
 #endif // MAINWINDOW_H

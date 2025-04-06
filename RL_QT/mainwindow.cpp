@@ -4,6 +4,9 @@
 
 #include <QDockWidget>
 #include <QLayout>
+#include <QPushButton>
+#include <QTabWidget>
+#include <QButtonGroup>
 #include <QDialog>
 #include <QMessageBox>
 #include <QDebug>
@@ -15,10 +18,16 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    setupWidgets();
+    setup_widgets();
+    setup_editor_panel_widgets();
 }
 
-void MainWindow::setupWidgets()
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+void MainWindow::setup_widgets()
 {
     QWidget *central_widget = new QWidget(this);
     setCentralWidget(central_widget);
@@ -42,9 +51,22 @@ void MainWindow::setupWidgets()
     setCentralWidget(ui->environment);
 }
 
-MainWindow::~MainWindow()
+void MainWindow::setup_editor_panel_widgets()
 {
-    delete ui;
+    QTabWidget *tabs = new QTabWidget(ui->editor_panel);
+    QButtonGroup *button_group = new QButtonGroup(ui->editor_panel);
+    button_group->setExclusive(true);
+
+    // Первая группа (поверхности)
+    QWidget *floor_tab = new QWidget;
+    QVBoxLayout *floors_layout = new QVBoxLayout(floor_tab);
+
+    QPushButton *def_floor = new QPushButton(QIcon(":/img/img/FloorCell.svg"), "Пол", floor_tab);
+    def_floor->setFixedSize(80, 80);
+    button_group->addButton(def_floor, 1);
+    floors_layout->addWidget(def_floor);
+
+    tabs->addTab(floor_tab, "Поверхности");
 }
 
 void MainWindow::on_create_proj_triggered()
@@ -78,8 +100,7 @@ void MainWindow::on_create_proj_triggered()
 void MainWindow::on_center_navigation_triggered()
 {
     if (scene->width() == 0)
-    {
-        QMessageBox::warning(this, "Предупреждение", "Для навигации необходимо создать графическую среду!");
+    {        
         return;
     }
 

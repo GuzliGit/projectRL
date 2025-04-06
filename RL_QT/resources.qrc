@@ -2,5 +2,9 @@
     <qresource prefix="/img">
         <file>img/EmptyCell.svg</file>
         <file>img/CenterNavigation.svg</file>
+        <file>img/FloorCell.svg</file>
+        <file>img/FloorWithShadow.svg</file>
+        <file>img/SolidWall.svg</file>
+        <file>img/WallWithBottom.svg</file>
     </qresource>
 </RCC>
