@@ -1,8 +1,10 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "createproj_dialog.h"
+#include "widgetwithflowlayout.h"
 
 #include <QDockWidget>
+#include <QLabel>
 #include <QLayout>
 #include <QPushButton>
 #include <QTabWidget>
@@ -11,6 +13,7 @@
 #include <QMessageBox>
 #include <QDebug>
 #include <QPainter>
+#include <QScrollArea>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -51,22 +54,67 @@ void MainWindow::setup_widgets()
     setCentralWidget(ui->environment);
 }
 
+QPushButton * MainWindow::create_editor_panel_button(QString btn_name, int btn_w, int btn_h, QString icon_path, QSize icon_size, QWidget *parent)
+{
+    QPushButton *btn = new QPushButton(parent);
+    btn->setFixedSize(btn_w, btn_h);
+    btn->setIcon(QIcon(icon_path));
+    btn->setIconSize(icon_size);
+    btn->setLayout(new QVBoxLayout);
+
+    QLabel *temp = new QLabel(btn_name);
+    temp->setAlignment(Qt::AlignCenter | Qt::AlignBottom);
+    btn->layout()->addWidget(temp);
+
+    return btn;
+}
+
 void MainWindow::setup_editor_panel_widgets()
 {
-    QTabWidget *tabs = new QTabWidget(ui->editor_panel);
-    QButtonGroup *button_group = new QButtonGroup(ui->editor_panel);
-    button_group->setExclusive(true);
+    QTabWidget *tabs = new QTabWidget;
 
-    // Первая группа (поверхности)
-    QWidget *floor_tab = new QWidget;
-    QVBoxLayout *floors_layout = new QVBoxLayout(floor_tab);
+    // Раздел с поверхностями
+    WidgetWithFlowLayout *floor_tab = new WidgetWithFlowLayout;
 
-    QPushButton *def_floor = new QPushButton(QIcon(":/img/img/FloorCell.svg"), "Пол", floor_tab);
-    def_floor->setFixedSize(80, 80);
-    button_group->addButton(def_floor, 1);
-    floors_layout->addWidget(def_floor);
+    QPushButton *def_floor = create_editor_panel_button("Пол", 70, 95, ":/img/img/FloorCell.svg",
+                                                        QSize(54, 54), floor_tab);
+    CellType new_type = CellType::Floor;
+    connect(def_floor, &QPushButton::pressed, this, [this, new_type](){
+        this->scene->change_selected_cells(new_type);
+    });
 
-    tabs->addTab(floor_tab, "Поверхности");
+    floor_tab->add_to_layout(def_floor);
+
+    QScrollArea *floor_tab_scroll_area = new QScrollArea;
+    floor_tab_scroll_area->setWidgetResizable(true);
+    floor_tab_scroll_area->setWidget(floor_tab);
+
+    tabs->addTab(floor_tab_scroll_area, "Поверхности");
+
+    // Раздел с поверхностями
+    WidgetWithFlowLayout *obstacle_tab = new WidgetWithFlowLayout;
+
+    QPushButton *def_obstacle = create_editor_panel_button("Стена", 70, 95, ":/img/img/WallWithBottom.svg",
+                                                        QSize(54, 54), obstacle_tab);
+    new_type = CellType::Wall;
+    connect(def_obstacle, &QPushButton::pressed, this, [this, new_type](){
+        this->scene->change_selected_cells(new_type);
+    });
+
+    obstacle_tab->add_to_layout(def_obstacle);
+
+    QScrollArea *obstacle_scroll_area = new QScrollArea;
+    obstacle_scroll_area->setWidgetResizable(true);
+    obstacle_scroll_area->setWidget(obstacle_tab);
+
+    tabs->addTab(obstacle_scroll_area, "Препятствия");
+
+    QWidget *editor_container = new QWidget;
+    QVBoxLayout *editor_layout = new QVBoxLayout(editor_container);
+    editor_layout->addWidget(tabs);
+
+    ui->editor_panel->setWidget(editor_container);
+    ui->editor_panel->setWidgetResizable(true);
 }
 
 void MainWindow::on_create_proj_triggered()

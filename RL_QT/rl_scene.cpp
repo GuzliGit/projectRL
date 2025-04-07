@@ -7,9 +7,11 @@
 #include <QScrollBar>
 #include <QRectF>
 
-RL_scene::RL_scene(int width, int height, int scale_factor, QObject* parent) : QGraphicsScene(parent)
+RL_scene::RL_scene(int width, int height, int scale_factor, QObject* parent) :
+    QGraphicsScene(parent)
 {
     setSceneRect(0, 0, width * scale_factor, height * scale_factor);
+    editor = new EnvironmentEditor();
 }
 
 void RL_scene::fill_with_empty_cells()
@@ -28,6 +30,25 @@ void RL_scene::fill_with_empty_cells()
             cell->setPos(j * cell_width, i * cell_height);
             this->addItem(cell);
             all_cells.append(cell);
+        }
+    }
+}
+
+void RL_scene::change_selected_cells(CellType type)
+{
+    editor->change_cells(selected_cells, type);
+
+    for (auto cell : selected_cells)
+    {
+        QPointF cell_pos = cell->pos();
+
+        for (int i = 0; i < all_cells.size(); i++)
+        {
+            if (all_cells[i]->pos() == cell_pos)
+            {
+                all_cells[i] = cell;
+                break;
+            }
         }
     }
 }
@@ -76,7 +97,8 @@ void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
                     if (cell == item)
                     {
                         cell->set_selected(!cell->is_selected(), false);
-                        selected_cells.append(cell);
+                        if (cell->is_selected())
+                            selected_cells.append(cell);
                     }
                     else
                         cell->set_selected(false, false);
@@ -206,7 +228,7 @@ void RL_scene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         //     qDebug() << cell->x() << cell->y();
         // }
 
-        event->accept();
+        // event->accept();
     }
     else
     {

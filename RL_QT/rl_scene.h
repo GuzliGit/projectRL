@@ -2,6 +2,7 @@
 #define RL_SCENE_H
 
 #include "cellitem.h"
+#include "environmenteditor.h"
 #include <QGraphicsScene>
 #include <QPointF>
 
@@ -10,6 +11,7 @@ class RL_scene : public QGraphicsScene
 public:
     RL_scene(int width, int height, int scale_factor, QObject* parent = nullptr);
     void fill_with_empty_cells();
+    void change_selected_cells(CellType type);
 
 protected:
     void wheelEvent(QGraphicsSceneWheelEvent *event) override;
@@ -20,6 +22,8 @@ protected:
     void keyReleaseEvent(QKeyEvent *event) override;
 
 private:
+    EnvironmentEditor *editor;
+
     double current_scale = 1.0;
     const double scale_step = 0.1;
     bool is_panning = false;

@@ -1,4 +1,5 @@
 #include "cellitem.h"
+#include <QGraphicsScene>
 
 CellItem::CellItem(QGraphicsItem *parent) :
     QGraphicsPixmapItem(parent),
@@ -50,6 +51,11 @@ void CellItem::set_selected(bool cell_selected, bool ctrl_pressed)
 bool CellItem::is_selected() const
 {
     return selected;
+}
+
+void CellItem::update_cell_appearance()
+{
+    setPixmap(QPixmap(":/img/img/EmptyCell.svg"));
 }
 
 void CellItem::animate_selection()

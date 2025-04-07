@@ -4,6 +4,7 @@
 #define SCALE_FACTOR 32
 #define BLOCK_LIMIT 32
 #include <QMainWindow>
+#include <QPushButton>
 #include "rl_scene.h"
 
 QT_BEGIN_NAMESPACE
@@ -30,6 +31,7 @@ private:
 
     Ui::MainWindow *ui;
     void setup_widgets();
+    QPushButton* create_editor_panel_button(QString btn_name, int btn_w, int btn_h, QString icon_path, QSize icon_size, QWidget *parent);
     void setup_editor_panel_widgets();
 };
 #endif // MAINWINDOW_H

@@ -5,6 +5,13 @@
 #include <QPropertyAnimation>
 #include <QParallelAnimationGroup>
 
+enum class CellType
+{
+    Empty,
+    Floor,
+    Wall
+};
+
 class CellItem : public QObject, public QGraphicsPixmapItem
 {
     Q_OBJECT
@@ -20,6 +27,8 @@ public:
     void allow_selection();
     bool selection_was_changed() const;
     void reset_animation();
+    virtual CellType get_type() const { return CellType::Empty; }
+    virtual void update_cell_appearance();
 
 private:
     int width;
