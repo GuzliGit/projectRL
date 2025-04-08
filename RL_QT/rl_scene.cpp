@@ -38,19 +38,22 @@ void RL_scene::change_selected_cells(CellType type)
 {
     editor->change_cells(selected_cells, type);
 
-    for (auto cell : selected_cells)
-    {
-        QPointF cell_pos = cell->pos();
+    update_all_cells();
 
-        for (int i = 0; i < all_cells.size(); i++)
-        {
-            if (all_cells[i]->pos() == cell_pos)
-            {
-                all_cells[i] = cell;
-                break;
-            }
-        }
-    }
+    deselect_cells();
+}
+
+void RL_scene::delete_selected_objs()
+{
+    // Добавить удаление агента позже...
+
+    if (selected_cells.empty())
+        return;
+
+    editor->change_cells(selected_cells, CellType::Empty);
+
+    update_all_cells();
+    deselect_cells();
 }
 
 void RL_scene::wheelEvent(QGraphicsSceneWheelEvent *event)
@@ -124,10 +127,7 @@ void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
     }
     else if (event->button() == Qt::RightButton && !selection_rect)
     {
-        for (auto cell : selected_cells)
-            cell->set_selected(false, false);
-
-        selected_cells.clear();
+        deselect_cells();
 
         event->accept();
     }
@@ -258,4 +258,30 @@ void RL_scene::synchronize_animation()
 {
     for (auto cell : selected_cells)
         cell->reset_animation();
+}
+
+void RL_scene::update_all_cells()
+{
+    for (auto cell : selected_cells)
+    {
+        QPointF cell_pos = cell->pos();
+
+        for (int i = 0; i < all_cells.size(); i++)
+        {
+            if (all_cells[i]->pos() == cell_pos)
+            {
+                all_cells[i] = cell;
+                break;
+            }
+        }
+    }
+}
+
+void RL_scene::deselect_cells()
+{
+    for (auto cell : selected_cells)
+    {
+        cell->set_selected(false, false);
+    }
+    selected_cells.clear();
 }

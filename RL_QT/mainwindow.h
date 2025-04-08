@@ -26,6 +26,8 @@ private slots:
 
     void on_center_navigation_triggered();
 
+    void on_delete_obj_triggered();
+
 private:
     RL_scene *scene;
 

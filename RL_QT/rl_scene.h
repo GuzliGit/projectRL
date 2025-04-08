@@ -12,6 +12,7 @@ public:
     RL_scene(int width, int height, int scale_factor, QObject* parent = nullptr);
     void fill_with_empty_cells();
     void change_selected_cells(CellType type);
+    void delete_selected_objs();
 
 protected:
     void wheelEvent(QGraphicsSceneWheelEvent *event) override;
@@ -35,6 +36,8 @@ private:
     QList<CellItem*> selected_cells;
 
     void synchronize_animation();
+    void update_all_cells();
+    void deselect_cells();
 };
 
 #endif // RL_SCENE_H

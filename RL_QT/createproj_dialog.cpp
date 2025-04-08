@@ -45,7 +45,13 @@ bool CreateProj_Dialog::validate_accept()
 
     if (!isint1 || !isint2)
     {
-        QMessageBox::warning(this, "Ошибка", "Числа должны быть целыми и неотрицательными!");
+        QMessageBox::warning(this, "Ошибка", "Размер задается целыми числами!");
+        return false;
+    }
+
+    if (val1 <= 0 || val2 <= 0)
+    {
+        QMessageBox::warning(this, "Ошибка", "Числа должны быть неотрицательными!");
         return false;
     }
 

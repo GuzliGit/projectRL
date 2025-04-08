@@ -76,13 +76,21 @@ void MainWindow::setup_editor_panel_widgets()
     // Раздел с поверхностями
     WidgetWithFlowLayout *floor_tab = new WidgetWithFlowLayout;
 
+    QPushButton *empty_floor = create_editor_panel_button("Пустая", 70, 95, ":/img/img/EmptyCell.svg",
+                                                          QSize(54, 54), floor_tab);
+    CellType new_type = CellType::Empty;
+    connect(empty_floor, &QPushButton::pressed, this, [this, new_type](){
+        this->scene->change_selected_cells(new_type);
+    });
+
     QPushButton *def_floor = create_editor_panel_button("Пол", 70, 95, ":/img/img/FloorCell.svg",
                                                         QSize(54, 54), floor_tab);
-    CellType new_type = CellType::Floor;
+    new_type = CellType::Floor;
     connect(def_floor, &QPushButton::pressed, this, [this, new_type](){
         this->scene->change_selected_cells(new_type);
     });
 
+    floor_tab->add_to_layout(empty_floor);
     floor_tab->add_to_layout(def_floor);
 
     QScrollArea *floor_tab_scroll_area = new QScrollArea;
@@ -91,7 +99,7 @@ void MainWindow::setup_editor_panel_widgets()
 
     tabs->addTab(floor_tab_scroll_area, "Поверхности");
 
-    // Раздел с поверхностями
+    // Раздел с препятствиями
     WidgetWithFlowLayout *obstacle_tab = new WidgetWithFlowLayout;
 
     QPushButton *def_obstacle = create_editor_panel_button("Стена", 70, 95, ":/img/img/WallWithBottom.svg",
@@ -153,5 +161,16 @@ void MainWindow::on_center_navigation_triggered()
     }
 
     ui->environment->centerOn(scene->sceneRect().center());
+}
+
+
+void MainWindow::on_delete_obj_triggered()
+{
+    if (scene->width() == 0)
+    {
+        return;
+    }
+
+    scene->delete_selected_objs();
 }
 

@@ -38,7 +38,7 @@ void EnvironmentEditor::change_cells(QList<CellItem*>& selected_cells, CellType 
 
     for (auto item : selected_cells)
     {
-        top_neighbour = QPointF(item->pos().x(), item->pos().y() - item->sceneBoundingRect().height());
+        top_neighbour = QPointF(item->pos().x(), item->pos().y() - item->sceneBoundingRect().height() + 1);
         bot_neighbour = QPointF(item->pos().x(), item->pos().y() + item->sceneBoundingRect().height());
         item->update_cell_appearance();
 

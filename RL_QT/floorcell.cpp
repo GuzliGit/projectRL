@@ -12,7 +12,7 @@ FloorCell::FloorCell(QGraphicsItem *parent) : CellItem(parent)
 void FloorCell::update_cell_appearance()
 {
     bool is_wall_above = false;
-    QPointF upper_pos(pos().x(), pos().y() - boundingRect().height());
+    QPointF upper_pos(pos().x(), pos().y() - sceneBoundingRect().height() + 1);
 
     for (auto item : scene()->items(upper_pos))
     {
