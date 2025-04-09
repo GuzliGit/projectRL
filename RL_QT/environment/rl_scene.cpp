@@ -1,5 +1,5 @@
 #include "rl_scene.h"
-#include "cellitem.h"
+#include "environment/cellitem.h"
 #include <QKeyEvent>
 #include <QGraphicsSceneWheelEvent>
 #include <QGraphicsView>

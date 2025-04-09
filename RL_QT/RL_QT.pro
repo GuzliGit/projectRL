@@ -9,29 +9,31 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    cellfactory.cpp \
-    cellitem.cpp \
+    agent/agentobj.cpp \
     createproj_dialog.cpp \
-    environmenteditor.cpp \
-    floorcell.cpp \
+    custom_tools/miniflowlayout.cpp \
+    custom_tools/widgetwithflowlayout.cpp \
+    environment/cellfactory.cpp \
+    environment/cellitem.cpp \
+    environment/environmenteditor.cpp \
+    environment/floorcell.cpp \
+    environment/rl_scene.cpp \
+    environment/wallcell.cpp \
     main.cpp \
     mainwindow.cpp \
-    miniflowlayout.cpp \
-    rl_scene.cpp \
-    wallcell.cpp \
-    widgetwithflowlayout.cpp
 
 HEADERS += \
-    cellfactory.h \
-    cellitem.h \
+    agent/agentobj.h \
     createproj_dialog.h \
-    environmenteditor.h \
-    floorcell.h \
+    custom_tools/miniflowlayout.h \
+    custom_tools/widgetwithflowlayout.h \
+    environment/cellfactory.h \
+    environment/cellitem.h \
+    environment/environmenteditor.h \
+    environment/floorcell.h \
+    environment/rl_scene.h \
+    environment/wallcell.h \
     mainwindow.h \
-    miniflowlayout.h \
-    rl_scene.h \
-    wallcell.h \
-    widgetwithflowlayout.h
 
 FORMS += \
     createproj_dialog.ui \
@@ -44,3 +46,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     resources.qrc
+
+DISTFILES += \
+    memory_files/docks.mem

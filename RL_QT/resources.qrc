@@ -7,5 +7,6 @@
         <file>img/SolidWall.svg</file>
         <file>img/WallWithBottom.svg</file>
         <file>img/Delete.svg</file>
+        <file>img/Agent.svg</file>
     </qresource>
 </RCC>

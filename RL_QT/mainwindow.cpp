@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "createproj_dialog.h"
-#include "widgetwithflowlayout.h"
+#include "custom_tools/widgetwithflowlayout.h"
 
 #include <QDockWidget>
 #include <QLabel>
@@ -14,6 +14,7 @@
 #include <QDebug>
 #include <QPainter>
 #include <QScrollArea>
+#include <QSettings>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -23,6 +24,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setup_widgets();
     setup_editor_panel_widgets();
+
+    QSettings settings("badin_AP-126", "RL_studio");
+    restoreState(settings.value("window_state").toByteArray());
 }
 
 MainWindow::~MainWindow()
@@ -35,9 +39,14 @@ void MainWindow::setup_widgets()
     QWidget *central_widget = new QWidget(this);
     setCentralWidget(central_widget);
 
-    QDockWidget *editor_dock = new QDockWidget("Редактор", this);
-    QDockWidget *log_dock = new QDockWidget("Логи", this);
-    QDockWidget *settings_dock = new QDockWidget("Настройки", this);
+    editor_dock = new QDockWidget("Редактор", this);
+    editor_dock->setObjectName("editor");
+
+    log_dock = new QDockWidget("Логи", this);
+    log_dock->setObjectName("logs");
+
+    settings_dock = new QDockWidget("Настройки", this);
+    settings_dock->setObjectName("settings");
 
     editor_dock->setWidget(ui->editor_panel);
     log_dock->setWidget(ui->log_panel);
@@ -108,7 +117,8 @@ void MainWindow::setup_editor_panel_widgets()
     connect(def_obstacle, &QPushButton::pressed, this, [this, new_type](){
         this->scene->change_selected_cells(new_type);
     });
-
+#define SCALE_FACTOR 32
+#define BLOCK_LIMIT 32
     obstacle_tab->add_to_layout(def_obstacle);
 
     QScrollArea *obstacle_scroll_area = new QScrollArea;
@@ -172,5 +182,12 @@ void MainWindow::on_delete_obj_triggered()
     }
 
     scene->delete_selected_objs();
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    QSettings settings("badin_AP-126", "RL_studio");
+    settings.setValue("window_state", saveState());
+    event->accept();
 }
 

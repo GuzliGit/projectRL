@@ -3,9 +3,12 @@
 
 #define SCALE_FACTOR 32
 #define BLOCK_LIMIT 32
+
+#include "qdockwidget.h"
+#include "environment/rl_scene.h"
+
 #include <QMainWindow>
 #include <QPushButton>
-#include "rl_scene.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -28,8 +31,13 @@ private slots:
 
     void on_delete_obj_triggered();
 
+    void closeEvent(QCloseEvent *event) override;
+
 private:
     RL_scene *scene;
+    QDockWidget *editor_dock;
+    QDockWidget *log_dock;
+    QDockWidget *settings_dock;
 
     Ui::MainWindow *ui;
     void setup_widgets();

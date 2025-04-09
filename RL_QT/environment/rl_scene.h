@@ -1,8 +1,8 @@
 #ifndef RL_SCENE_H
 #define RL_SCENE_H
 
-#include "cellitem.h"
-#include "environmenteditor.h"
+#include "environment/cellitem.h"
+#include "environment/environmenteditor.h"
 #include <QGraphicsScene>
 #include <QPointF>
 
