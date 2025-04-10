@@ -24,9 +24,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setup_widgets();
     setup_editor_panel_widgets();
+    setup_settings_panel_widgets();
 
     QSettings settings("badin_AP-126", "RL_studio");
     restoreState(settings.value("window_state").toByteArray());
+
+    connect(scene, &RL_scene::selection_changed, this, &MainWindow::onScene_selection_changed);
 }
 
 MainWindow::~MainWindow()
@@ -117,8 +120,7 @@ void MainWindow::setup_editor_panel_widgets()
     connect(def_obstacle, &QPushButton::pressed, this, [this, new_type](){
         this->scene->change_selected_cells(new_type);
     });
-#define SCALE_FACTOR 32
-#define BLOCK_LIMIT 32
+
     obstacle_tab->add_to_layout(def_obstacle);
 
     QScrollArea *obstacle_scroll_area = new QScrollArea;
@@ -127,12 +129,58 @@ void MainWindow::setup_editor_panel_widgets()
 
     tabs->addTab(obstacle_scroll_area, "Препятствия");
 
+    // Раздел с агентами
+    WidgetWithFlowLayout *agent_tab = new WidgetWithFlowLayout;
+
+    QPushButton *def_agent = create_editor_panel_button("С обзором", 95, 95, ":/img/img/Agent.svg",
+                                                        QSize(54, 54), agent_tab);
+    AgentType ag_type = AgentType::LimitedView;
+    connect(def_agent, &QPushButton::pressed, this, [this, ag_type](){
+        this->scene->add_agent(ag_type);
+    });
+
+    agent_tab->add_to_layout(def_agent);
+
+    QScrollArea *agent_scroll_area = new QScrollArea;
+    agent_scroll_area->setWidgetResizable(true);
+    agent_scroll_area->setWidget(agent_tab);
+
+    tabs->addTab(agent_scroll_area, "Агенты");
+
     QWidget *editor_container = new QWidget;
     QVBoxLayout *editor_layout = new QVBoxLayout(editor_container);
     editor_layout->addWidget(tabs);
 
     ui->editor_panel->setWidget(editor_container);
     ui->editor_panel->setWidgetResizable(true);
+}
+
+void MainWindow::setup_settings_panel_widgets()
+{
+    QWidget *settings_container = new QWidget;
+    QVBoxLayout *settings_layout = new QVBoxLayout;
+    settings_container->setLayout(settings_layout);
+
+    ui->rl_settings_panel->setWidget(settings_container);
+    ui->rl_settings_panel->setWidgetResizable(true);
+}
+
+void MainWindow::clear_layout(QLayout *layout)
+{
+    if (layout == nullptr)
+        return;
+
+    QLayoutItem *item;
+    while((item = layout->takeAt(0))) {
+        if (item->layout()) {
+            clear_layout(item->layout());
+            delete item->layout();
+        }
+        if (item->widget()) {
+            delete item->widget();
+        }
+        delete item;
+    }
 }
 
 void MainWindow::on_create_proj_triggered()
@@ -189,5 +237,12 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QSettings settings("badin_AP-126", "RL_studio");
     settings.setValue("window_state", saveState());
     event->accept();
+}
+
+void MainWindow::onScene_selection_changed()
+{
+    clear_layout(ui->rl_settings_panel->widget()->layout());
+
+    setup_settings_panel_widgets();
 }
 

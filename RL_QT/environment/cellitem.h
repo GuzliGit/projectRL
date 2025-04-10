@@ -29,6 +29,7 @@ public:
     void reset_animation();
     virtual CellType get_type() const { return CellType::Empty; }
     virtual void update_cell_appearance();
+    virtual bool is_walkable() const { return false; };
 
 private:
     int width;

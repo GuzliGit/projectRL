@@ -1,11 +1,14 @@
 #include "rl_scene.h"
 #include "environment/cellitem.h"
+#include "agent/agentobj.h"
+
 #include <QKeyEvent>
 #include <QGraphicsSceneWheelEvent>
 #include <QGraphicsView>
 #include <QCursor>
 #include <QScrollBar>
 #include <QRectF>
+#include <QMessageBox>
 
 RL_scene::RL_scene(int width, int height, int scale_factor, QObject* parent) :
     QGraphicsScene(parent)
@@ -45,14 +48,48 @@ void RL_scene::change_selected_cells(CellType type)
 
 void RL_scene::delete_selected_objs()
 {
-    // Добавить удаление агента позже...
-
-    if (selected_cells.empty())
+    if (selected_cells.empty() && !selected_agents.empty())
+    {
+        all_agents.removeOne(selected_agents.first());
+        this->removeItem(selected_agents.first());
+        selected_agents.clear();
         return;
+    }
+
+    for (auto cell : selected_cells)
+    {
+        for (auto agent : all_agents)
+        {
+            if (cell->pos() == agent->pos())
+            {
+                all_agents.removeOne(agent);
+                selected_agents.removeOne(agent);
+                this->removeItem(agent);
+            }
+        }
+    }
 
     editor->change_cells(selected_cells, CellType::Empty);
 
     update_all_cells();
+    deselect_cells();
+}
+
+void RL_scene::add_agent(AgentType type)
+{
+    if (selected_cells.size() > 1 || all_agents.size() > 0)
+    {
+        QMessageBox::warning(this->views().first()->parentWidget(), "Ошибка", "Можно добавить только одного агента (пока что)!");
+        return;
+    }
+    else if (selected_cells.size() == 0)
+        return;
+
+    if (editor->add_agent(selected_cells, type))
+        all_agents.append(dynamic_cast<AgentObj*>(itemAt(selected_cells.first()->pos(), QTransform())));
+    else
+        return;
+
     deselect_cells();
 }
 
@@ -84,13 +121,34 @@ void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
         event->accept();
     }
-    else if (event->button() == Qt::LeftButton) // Выделение клеток
+    else if (event->button() == Qt::LeftButton) // Выделение объектов на сцене
     {
         ctrl_pressed = event->modifiers() & Qt::ControlModifier;
+
+        is_left_button_pressed = true;
+        // Агенты
+        AgentObj *temp = dynamic_cast<AgentObj*>(itemAt(event->scenePos(), QTransform()));
         CellItem *item = dynamic_cast<CellItem*>(itemAt(event->scenePos(), QTransform()));
 
+        if (temp)
+        {
+            is_changing_agent_pos = false;
+            deselect_cells();
+
+            temp->set_selected(!temp->isSelected());
+
+            for (auto agent : all_agents)
+            {
+                if (temp == agent)
+                    selected_agents.append(agent);
+            }
+        }
+
+        // Клетки
         if (item)
         {
+            deselect_agents();
+
             if (!ctrl_pressed)
             {
                 selected_cells.clear();
@@ -118,16 +176,20 @@ void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
             }
         }
 
-        selection_start = event->scenePos();
-        selection_rect = new QGraphicsRectItem(QRectF(selection_start, QSizeF(0, 0)));
-        selection_rect->setPen(QPen(Qt::white, 1, Qt::DashLine));
-        addItem(selection_rect);
+        if (selected_agents.size() == 0)
+        {
+            selection_start = event->scenePos();
+            selection_rect = new QGraphicsRectItem(QRectF(selection_start, QSizeF(0, 0)));
+            selection_rect->setPen(QPen(Qt::white, 1, Qt::DashLine));
+            addItem(selection_rect);
+        }
 
         event->accept();
     }
     else if (event->button() == Qt::RightButton && !selection_rect)
     {
         deselect_cells();
+        deselect_agents();
 
         event->accept();
     }
@@ -191,6 +253,16 @@ void RL_scene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
         event->accept();
     }
+    else if (selected_agents.size() == 1 && is_left_button_pressed)
+    {
+        CellItem *item = dynamic_cast<CellItem*>(itemAt(event->scenePos(), QTransform()));
+
+        if (item && item->get_type() == CellType::Floor)
+        {
+            is_changing_agent_pos = true;
+            selected_agents.first()->setPos(item->pos());
+        }
+    }
     else
     {
         QGraphicsScene::mouseMoveEvent(event);
@@ -228,10 +300,19 @@ void RL_scene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         //     qDebug() << cell->x() << cell->y();
         // }
 
-        // event->accept();
+        is_left_button_pressed = false;
+
+        event->accept();
+        emit selection_changed();
+    }
+    else if (is_changing_agent_pos)
+    {
+        deselect_agents();
+        is_left_button_pressed = false;
     }
     else
     {
+        is_left_button_pressed = false;
         QGraphicsScene::mouseReleaseEvent(event);
     }
 }
@@ -284,4 +365,13 @@ void RL_scene::deselect_cells()
         cell->set_selected(false, false);
     }
     selected_cells.clear();
+}
+
+void RL_scene::deselect_agents()
+{
+    for (auto agent : selected_agents)
+    {
+        agent->set_selected(false);
+    }
+    selected_agents.clear();
 }

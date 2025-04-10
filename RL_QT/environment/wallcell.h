@@ -10,6 +10,7 @@ public:
     WallCell(QGraphicsItem *parent);
     virtual CellType get_type() const override { return CellType::Wall; }
     virtual void update_cell_appearance() override;
+    virtual bool is_walkable() const override { return false; }
 };
 
 #endif // WALLCELL_H

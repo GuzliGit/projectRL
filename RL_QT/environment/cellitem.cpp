@@ -45,7 +45,6 @@ void CellItem::set_selected(bool cell_selected, bool ctrl_pressed)
     {
         stop_animation();
     }
-
     this->setSelected(selected);
 }
 

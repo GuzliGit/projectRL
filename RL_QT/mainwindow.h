@@ -33,6 +33,8 @@ private slots:
 
     void closeEvent(QCloseEvent *event) override;
 
+    void onScene_selection_changed();
+
 private:
     RL_scene *scene;
     QDockWidget *editor_dock;
@@ -43,5 +45,7 @@ private:
     void setup_widgets();
     QPushButton* create_editor_panel_button(QString btn_name, int btn_w, int btn_h, QString icon_path, QSize icon_size, QWidget *parent);
     void setup_editor_panel_widgets();
+    void setup_settings_panel_widgets();
+    void clear_layout(QLayout* layout);
 };
 #endif // MAINWINDOW_H

@@ -9,6 +9,7 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    agent/agentfactory.cpp \
     agent/agentobj.cpp \
     createproj_dialog.cpp \
     custom_tools/miniflowlayout.cpp \
@@ -23,6 +24,7 @@ SOURCES += \
     mainwindow.cpp \
 
 HEADERS += \
+    agent/agentfactory.h \
     agent/agentobj.h \
     createproj_dialog.h \
     custom_tools/miniflowlayout.h \
