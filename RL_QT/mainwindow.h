@@ -47,5 +47,7 @@ private:
     void setup_editor_panel_widgets();
     void setup_settings_panel_widgets();
     void clear_layout(QLayout* layout);
+    void setup_agent_settings(AgentObj* agent);
+    void setup_cell_settings(CellItem* cell);
 };
 #endif // MAINWINDOW_H

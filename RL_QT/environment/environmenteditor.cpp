@@ -56,20 +56,19 @@ void EnvironmentEditor::change_cells(QList<CellItem*>& selected_cells, CellType 
     }
 }
 
-bool EnvironmentEditor::add_agent(QList<CellItem*>& selected_cells, AgentType type)
+AgentObj* EnvironmentEditor::add_agent(QList<CellItem*>& selected_cells, AgentType type)
 {
     CellItem* cell = selected_cells.first();
     if (cell->get_type() == CellType::Empty || cell->get_type() == CellType::Wall)
-        return false;
+        return nullptr;
 
     switch (type){
     case AgentType::LimitedView:
         AgentObj* agent = new AgentObj();
         agent->setPos(cell->pos());
-        cell->scene()->addItem(agent);
-        return true;
+        return agent;
         break;
     }
 
-    return false;
+    return nullptr;
 }

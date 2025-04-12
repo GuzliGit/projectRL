@@ -9,7 +9,7 @@ class EnvironmentEditor
 public:
     EnvironmentEditor();
     void change_cells(QList<CellItem*>& selected_cells, CellType type);
-    bool add_agent(QList<CellItem*>& selected_cells, AgentType type);
+    AgentObj* add_agent(QList<CellItem*>& selected_cells, AgentType type);
     void change_agent(QList<AgentObj*>& selected_agents, AgentType type);
 };
 

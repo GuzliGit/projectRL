@@ -53,6 +53,7 @@ void RL_scene::delete_selected_objs()
         all_agents.removeOne(selected_agents.first());
         this->removeItem(selected_agents.first());
         selected_agents.clear();
+        this->update();
         return;
     }
 
@@ -73,6 +74,7 @@ void RL_scene::delete_selected_objs()
 
     update_all_cells();
     deselect_cells();
+    this->update();
 }
 
 void RL_scene::add_agent(AgentType type)
@@ -85,8 +87,12 @@ void RL_scene::add_agent(AgentType type)
     else if (selected_cells.size() == 0)
         return;
 
-    if (editor->add_agent(selected_cells, type))
-        all_agents.append(dynamic_cast<AgentObj*>(itemAt(selected_cells.first()->pos(), QTransform())));
+    AgentObj* agent = editor->add_agent(selected_cells, type);
+    if (agent)
+    {
+        all_agents.append(agent);
+        this->addItem(agent);
+    }
     else
         return;
 
@@ -197,6 +203,7 @@ void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
     {
         QGraphicsScene::mousePressEvent(event);
     }
+    this->update();
 }
 
 void RL_scene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
@@ -267,6 +274,7 @@ void RL_scene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     {
         QGraphicsScene::mouseMoveEvent(event);
     }
+    this->update();
 }
 
 void RL_scene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
@@ -303,7 +311,6 @@ void RL_scene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         is_left_button_pressed = false;
 
         event->accept();
-        emit selection_changed();
     }
     else if (is_changing_agent_pos)
     {
@@ -315,6 +322,7 @@ void RL_scene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         is_left_button_pressed = false;
         QGraphicsScene::mouseReleaseEvent(event);
     }
+    this->update();
 }
 
 void RL_scene::keyPressEvent(QKeyEvent *event)

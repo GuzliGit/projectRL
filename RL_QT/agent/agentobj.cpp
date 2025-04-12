@@ -5,6 +5,8 @@
 #include <QPropertyAnimation>
 #include <QGraphicsSceneMouseEvent>
 #include <QPen>
+#include <QPainter>
+#include <QGraphicsView>
 
 AgentObj::AgentObj(QGraphicsItem *parent) :
     QGraphicsPixmapItem(parent),
@@ -13,13 +15,7 @@ AgentObj::AgentObj(QGraphicsItem *parent) :
     QPixmap pixmap(":/img/img/Agent.svg");
     width = pixmap.width();
     height = pixmap.height();
-
-    view_cirlce = new QGraphicsEllipseItem(-view_range, -view_range, view_range * 2, view_range * 2, this);
-    QPen pen(QColor::fromRgb(1, 1, 1));
-    pen.setWidth(2);
-    view_cirlce->setPen(pen);
-    view_cirlce->setOpacity(0);
-    view_cirlce->setPos(pos().x() + width / 2, pos().y() + height / 2);
+    view_range = MIN_VIEW_RANGE;
 
     setPixmap(pixmap);
     setTransformOriginPoint(this->boundingRect().center());
@@ -27,6 +23,13 @@ AgentObj::AgentObj(QGraphicsItem *parent) :
     setShapeMode(QGraphicsPixmapItem::BoundingRectShape);
     setFlag(QGraphicsItem::ItemIsSelectable);
     setFlag(QGraphicsItem::ItemIsMovable, false);
+}
+
+AgentObj::~AgentObj()
+{
+    stop_animation();
+    this->set_selected(false);
+    disconnect();
 }
 
 int AgentObj::get_width()
@@ -39,6 +42,11 @@ int AgentObj::get_height()
     return height;
 }
 
+int AgentObj::get_view_range()
+{
+    return view_range / width;
+}
+
 void AgentObj::set_selected(bool agent_selected)
 {
     selected = agent_selected;
@@ -46,12 +54,10 @@ void AgentObj::set_selected(bool agent_selected)
     if (selected)
     {
         animate_selection();
-        view_cirlce->setOpacity(1);
     }
     else
     {
         stop_animation();
-        view_cirlce->setOpacity(0);
     }
 
     this->setSelected(selected);
@@ -64,14 +70,28 @@ bool AgentObj::is_selected() const
 
 void AgentObj::set_view_range(int range)
 {
-    view_range = range;
+    if (range < MIN_VIEW_RANGE)
+        return;
 
-    view_cirlce = new QGraphicsEllipseItem(-view_range, -view_range, view_range * 2, view_range * 2, this);
-    QPen pen(QColor::fromRgb(1, 1, 1));
-    pen.setWidth(2);
-    view_cirlce->setPen(pen);
-    view_cirlce->setOpacity(0);
-    view_cirlce->setPos(pos().x() + width / 2, pos().y() + height / 2);
+    view_range = range;
+    this->scene()->update();
+}
+
+void AgentObj::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    QGraphicsPixmapItem::paint(painter, option, widget);
+
+    if (selected) {
+        painter->save();
+
+        painter->setPen(QPen(Qt::black, 2));
+        painter->setOpacity(0.8);
+        painter->setBrush(Qt::NoBrush);
+
+        painter->drawEllipse(boundingRect().center(), view_range, view_range);
+
+        painter->restore();
+    }
 }
 
 void AgentObj::animate_selection()
@@ -80,16 +100,18 @@ void AgentObj::animate_selection()
     {
         selection_animation = new QParallelAnimationGroup(this);
 
-        QPropertyAnimation *pulse = new QPropertyAnimation(this, "scale");
-        pulse->setDuration(1250);
-        pulse->setKeyValueAt(0, 1.0);
-        pulse->setKeyValueAt(0.5, 0.65);
-        pulse->setKeyValueAt(1, 1);
-        pulse->setLoopCount(-1);
+        QPropertyAnimation *fade = new QPropertyAnimation(this, "opacity");
+        fade->setDuration(1250);
+        fade->setKeyValueAt(0, 1);
+        fade->setKeyValueAt(0.25, 0.5);
+        fade->setKeyValueAt(0.5, 0.3);
+        fade->setKeyValueAt(0.75, 0.5);
+        fade->setKeyValueAt(1, 1);
+        fade->setLoopCount(-1);
 
-        pulse->setEasingCurve(QEasingCurve::OutQuad);
+        fade->setEasingCurve(QEasingCurve::InOutSine);
 
-        selection_animation->addAnimation(pulse);
+        selection_animation->addAnimation(fade);
     }
 
     if (selection_animation->state() != QAbstractAnimation::Running)
@@ -103,6 +125,5 @@ void AgentObj::stop_animation()
         selection_animation->stop();
         this->setScale(1.0);
         this->setOpacity(1.0);
-        view_cirlce->setOpacity(0);
     }
 }

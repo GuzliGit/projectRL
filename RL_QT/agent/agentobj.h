@@ -6,6 +6,8 @@
 #include <QParallelAnimationGroup>
 #include <QGraphicsSceneMouseEvent>
 
+#define MIN_VIEW_RANGE 32
+
 enum AgentType
 {
     LimitedView
@@ -14,23 +16,28 @@ enum AgentType
 class AgentObj : public QObject, public QGraphicsPixmapItem
 {
     Q_OBJECT
-    Q_PROPERTY(qreal scale READ scale WRITE setScale)        // Масштаб
+    Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)  // Прозрачность
 public:
     AgentObj(QGraphicsItem *parent = nullptr);
+    ~AgentObj();
     int get_width();
     int get_height();
+    int get_view_range();
     void set_selected(bool agent_selected);
     bool is_selected() const;
     void set_view_range(int range);
     virtual AgentType get_type() { return AgentType::LimitedView; }
 
+protected:
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = nullptr) override;
+
 private:
     int width;
     int height;
-    int view_range = 64;
+    int view_range;
     bool selected = false;
     QParallelAnimationGroup *selection_animation;
-    QGraphicsEllipseItem *view_cirlce;
+    QPainter* painter;
 
     void animate_selection();
     void stop_animation();
