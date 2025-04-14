@@ -17,6 +17,11 @@ AgentObj::AgentObj(QGraphicsItem *parent) :
     height = pixmap.height();
     view_range = MIN_VIEW_RANGE;
 
+    goal_pixmap = new QGraphicsPixmapItem;
+    goal_pixmap->setPixmap(QPixmap(":/img/img/Goal.svg"));
+    goal_pixmap->setFlag(QGraphicsItem::ItemIsSelectable, false);
+    goal_pixmap->setFlag(QGraphicsItem::ItemIsMovable, false);
+
     setPixmap(pixmap);
     setTransformOriginPoint(this->boundingRect().center());
 
@@ -66,6 +71,45 @@ void AgentObj::set_selected(bool agent_selected)
 bool AgentObj::is_selected() const
 {
     return selected;
+}
+
+void AgentObj::set_goal(CellItem *new_goal)
+{
+    if (!new_goal->is_walkable())
+        return;
+
+    goal_cell = new_goal;
+    goal_pixmap->setPos(goal_cell->pos());
+
+    if (this->scene()->items().contains(goal_pixmap))
+        return;
+
+    this->scene()->addItem(goal_pixmap);
+}
+
+CellItem *AgentObj::get_goal()
+{
+    if (goal_cell)
+        return goal_cell;
+
+    return nullptr;
+}
+
+bool AgentObj::has_goal()
+{
+    if (goal_cell)
+        return true;
+
+    return false;
+}
+
+void AgentObj::remove_goal()
+{
+    if (!goal_cell)
+        return;
+
+    goal_cell = nullptr;
+    this->scene()->removeItem(goal_pixmap);
 }
 
 void AgentObj::set_view_range(int range)

@@ -1,6 +1,8 @@
 #ifndef AGENTOBJ_H
 #define AGENTOBJ_H
 
+#include "environment/cellitem.h"
+
 #include <QObject>
 #include <QGraphicsPixmapItem>
 #include <QParallelAnimationGroup>
@@ -25,7 +27,11 @@ public:
     int get_view_range();
     void set_selected(bool agent_selected);
     bool is_selected() const;
-    void set_view_range(int range);
+    void set_goal(CellItem* new_goal);
+    CellItem *get_goal();
+    bool has_goal();
+    void remove_goal();
+    virtual void set_view_range(int range);
     virtual AgentType get_type() { return AgentType::LimitedView; }
 
 protected:
@@ -38,6 +44,8 @@ private:
     bool selected = false;
     QParallelAnimationGroup *selection_animation;
     QPainter* painter;
+    CellItem* goal_cell = nullptr;
+    QGraphicsPixmapItem* goal_pixmap = nullptr;
 
     void animate_selection();
     void stop_animation();

@@ -2,6 +2,7 @@
 #include "floorcell.h"
 #include "wallcell.h"
 #include "cellfactory.h"
+#include "agent/agentfactory.h"
 
 #include <QGraphicsScene>
 
@@ -56,19 +57,37 @@ void EnvironmentEditor::change_cells(QList<CellItem*>& selected_cells, CellType 
     }
 }
 
-AgentObj* EnvironmentEditor::add_agent(QList<CellItem*>& selected_cells, AgentType type)
+void EnvironmentEditor::add_agents(QList<CellItem*>& selected_cells, AgentType type)
 {
-    CellItem* cell = selected_cells.first();
-    if (cell->get_type() == CellType::Empty || cell->get_type() == CellType::Wall)
-        return nullptr;
+    for (auto cell : selected_cells)
+    {
+        if (cell->get_type() == CellType::Empty || cell->get_type() == CellType::Wall)
+            continue;
 
-    switch (type){
-    case AgentType::LimitedView:
-        AgentObj* agent = new AgentObj();
-        agent->setPos(cell->pos());
-        return agent;
-        break;
+        switch (type){
+        case AgentType::LimitedView:
+            AgentObj* agent = new AgentObj();
+            agent->setPos(cell->pos());
+            cell->scene()->addItem(agent);
+            break;
+        }
     }
+}
 
-    return nullptr;
+void EnvironmentEditor::change_agent(QList<AgentObj *> &selected_agents, AgentType type)
+{
+    for (int i = 0; i < selected_agents.size(); i++)
+    {
+        AgentObj* old_item = selected_agents[i];
+        AgentObj* new_item = nullptr;
+
+        switch (type) {
+        case AgentType::LimitedView:
+            new_item = AgentFactory::convert_agent<AgentObj>(old_item);
+            break;
+        }
+
+        if (new_item)
+            selected_agents[i] = new_item;
+    }
 }

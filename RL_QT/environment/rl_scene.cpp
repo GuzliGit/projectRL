@@ -9,6 +9,7 @@
 #include <QScrollBar>
 #include <QRectF>
 #include <QMessageBox>
+#include <QMainWindow>
 
 RL_scene::RL_scene(int width, int height, int scale_factor, QObject* parent) :
     QGraphicsScene(parent)
@@ -39,10 +40,27 @@ void RL_scene::fill_with_empty_cells()
 
 void RL_scene::change_selected_cells(CellType type)
 {
+    for (auto cell : selected_cells)
+    {
+        for (auto agent : all_agents)
+        {
+            if (cell->pos() == agent->pos())
+            {
+                agent->remove_goal();
+                all_agents.removeOne(agent);
+                selected_agents.removeOne(agent);
+                this->removeItem(agent);
+            }
+            else if (cell == agent->get_goal())
+            {
+                agent->remove_goal();
+            }
+        }
+    }
+
     editor->change_cells(selected_cells, type);
 
     update_all_cells();
-
     deselect_cells();
 }
 
@@ -50,8 +68,12 @@ void RL_scene::delete_selected_objs()
 {
     if (selected_cells.empty() && !selected_agents.empty())
     {
-        all_agents.removeOne(selected_agents.first());
-        this->removeItem(selected_agents.first());
+        for (auto agent : selected_agents)
+        {
+            all_agents.removeOne(agent);
+            agent->remove_goal();
+            this->removeItem(agent);
+        }
         selected_agents.clear();
         this->update();
         return;
@@ -63,9 +85,14 @@ void RL_scene::delete_selected_objs()
         {
             if (cell->pos() == agent->pos())
             {
+                agent->remove_goal();
                 all_agents.removeOne(agent);
                 selected_agents.removeOne(agent);
                 this->removeItem(agent);
+            }
+            else if (cell == agent->get_goal())
+            {
+                agent->remove_goal();
             }
         }
     }
@@ -79,24 +106,47 @@ void RL_scene::delete_selected_objs()
 
 void RL_scene::add_agent(AgentType type)
 {
-    if (selected_cells.size() > 1 || all_agents.size() > 0)
-    {
-        QMessageBox::warning(this->views().first()->parentWidget(), "Ошибка", "Можно добавить только одного агента (пока что)!");
-        return;
-    }
-    else if (selected_cells.size() == 0)
+    if (selected_cells.size() == 0)
         return;
 
-    AgentObj* agent = editor->add_agent(selected_cells, type);
-    if (agent)
+    editor->add_agents(selected_cells, type);
+    for (auto cell : selected_cells)
     {
-        all_agents.append(agent);
-        this->addItem(agent);
+        if (AgentObj* agent = dynamic_cast<AgentObj*>(itemAt(QPointF(cell->x(), cell->y()), QTransform())))
+        {
+            all_agents.append(agent);
+        }
     }
-    else
-        return;
 
     deselect_cells();
+}
+
+void RL_scene::set_agent_goal()
+{
+    if (selected_agents.size() == 0 || selected_agents.size() > 1)
+        return;
+
+    is_goal_selection = true;
+    QCursor c;
+    c.setShape(Qt::PointingHandCursor);
+
+    QMainWindow *main_window = qobject_cast<QMainWindow*>(this->parent());
+    main_window->setCursor(c);
+
+    this->views().first()->setMouseTracking(true);
+}
+
+void RL_scene::remove_agent_goal()
+{
+    if (selected_agents.size() == 0 || selected_agents.size() > 1)
+        return;
+
+    selected_agents.first()->remove_goal();
+}
+
+bool RL_scene::is_in_interactive_mode()
+{
+    return is_goal_selection;
 }
 
 void RL_scene::wheelEvent(QGraphicsSceneWheelEvent *event)
@@ -127,7 +177,7 @@ void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
         event->accept();
     }
-    else if (event->button() == Qt::LeftButton) // Выделение объектов на сцене
+    else if (event->button() == Qt::LeftButton && !is_goal_selection) // Выделение объектов на сцене
     {
         ctrl_pressed = event->modifiers() & Qt::ControlModifier;
 
@@ -147,6 +197,11 @@ void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
             {
                 if (temp == agent)
                     selected_agents.append(agent);
+                else
+                {
+                    agent->set_selected(false);
+                    selected_agents.removeOne(agent);
+                }
             }
         }
 
@@ -188,6 +243,19 @@ void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
             selection_rect = new QGraphicsRectItem(QRectF(selection_start, QSizeF(0, 0)));
             selection_rect->setPen(QPen(Qt::white, 1, Qt::DashLine));
             addItem(selection_rect);
+        }
+
+        event->accept();
+    }
+    else if (event->button() == Qt::LeftButton && is_goal_selection)
+    {
+        CellItem *item = dynamic_cast<CellItem*>(itemAt(event->scenePos(), QTransform()));
+
+        deselect_cells();
+        if (item)
+        {
+            if (item->is_walkable() && selected_agents.size() == 1)
+                selected_agents.first()->set_goal(item);
         }
 
         event->accept();
@@ -264,11 +332,26 @@ void RL_scene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     {
         CellItem *item = dynamic_cast<CellItem*>(itemAt(event->scenePos(), QTransform()));
 
-        if (item && item->get_type() == CellType::Floor)
+        if (item && item->is_walkable())
         {
             is_changing_agent_pos = true;
             selected_agents.first()->setPos(item->pos());
         }
+
+        event->accept();
+    }
+    else if (is_goal_selection)
+    {
+        CellItem *item = dynamic_cast<CellItem*>(itemAt(event->scenePos(), QTransform()));
+
+        if (item && !selected_cells.contains(item))
+        {
+            deselect_cells();
+            item->set_selected(true, false);
+            selected_cells.append(item);
+        }
+
+        event->accept();
     }
     else
     {
@@ -316,6 +399,20 @@ void RL_scene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     {
         deselect_agents();
         is_left_button_pressed = false;
+
+        event->accept();
+    }
+    else if (is_goal_selection)
+    {
+        is_goal_selection = false;
+        QCursor c;
+        c.setShape(Qt::ArrowCursor);
+
+        QMainWindow *main_window = qobject_cast<QMainWindow*>(this->parent());
+        main_window->setCursor(c);
+
+        this->views().first()->setMouseTracking(true);
+        event->accept();
     }
     else
     {

@@ -17,7 +17,7 @@ public:
         new_agent->setPos(old_agent->pos());
 
         if (old_agent->is_selected())
-            new_agent->set_selected(true, false);
+            new_agent->set_selected(true);
 
         if (auto scene = old_agent->scene())
         {

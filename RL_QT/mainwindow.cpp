@@ -4,8 +4,6 @@
 #include "custom_tools/widgetwithflowlayout.h"
 #include "agent/agentobj.h"
 #include "environment/cellitem.h"
-#include "environment/floorcell.h"
-#include "environment/wallcell.h"
 
 #include <QDockWidget>
 #include <QLabel>
@@ -20,8 +18,6 @@
 #include <QScrollArea>
 #include <QSettings>
 #include <QSpinBox>
-
-#define PIXMAP_INDENT 10
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -41,6 +37,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    delete scene;
     delete ui;
 }
 
@@ -196,39 +193,66 @@ void MainWindow::setup_agent_settings(AgentObj* agent)
     QVBoxLayout *settings_layout = new QVBoxLayout;
     settings_container->setLayout(settings_layout);
 
+    QLabel *agent_name = new QLabel;
+    agent_name->setAlignment(Qt::AlignCenter);
+    agent_name->setWordWrap(true);
+    settings_layout->addWidget(agent_name);
+
+    QWidget *image_widget = new QWidget;
+    QVBoxLayout *image_layout = new QVBoxLayout;
+    image_layout->setAlignment(Qt::AlignCenter);
+
+    QPushButton *image_container = new QPushButton;
+    image_container->setFixedSize(100, 100);
+    image_container->setIconSize(QSize(95, 95));
+
+    image_layout->addWidget(image_container);
+    image_widget->setLayout(image_layout);
+    settings_layout->addWidget(image_widget);
+
+    QLabel *agent_description = new QLabel;
+    agent_description->setAlignment(Qt::AlignCenter);
+    agent_description->setWordWrap(true);
+    settings_layout->addWidget(agent_description);
+
+    QPushButton *agent_goal_set = new QPushButton;
+    agent_goal_set->setText("Задать цель");
+
+    QPushButton *agent_goal_remove = new QPushButton;
+    agent_goal_remove->setText("Убрать цель");
+
+    connect(agent_goal_set, &QPushButton::pressed, this, [this](){
+        this->scene->set_agent_goal();
+    });
+    settings_layout->addWidget(agent_goal_set);
+
+    connect(agent_goal_remove, &QPushButton::pressed, this, [this](){
+        this->scene->remove_agent_goal();
+    });
+    settings_layout->addWidget(agent_goal_remove);
+
     switch (agent->get_type())
     {
     case AgentType::LimitedView:
-        QLabel *agent_name = new QLabel;
-        agent_name->setAlignment(Qt::AlignCenter);
+
         agent_name->setText("Агент с ограниченным обзором");
-        settings_layout->addWidget(agent_name);
-
-        QWidget *image_container = new QWidget;
-        QHBoxLayout *image_layout = new QHBoxLayout(image_container);
-        image_layout->setAlignment(Qt::AlignCenter);
-
-        QLabel *image_label = new QLabel;
-        image_label->setPixmap(QPixmap(":/img/img/Agent.svg"));
-        image_label->setFixedSize(QSize(agent->get_width() + PIXMAP_INDENT,
-                                        agent->get_height() + PIXMAP_INDENT));
-        image_label->setAlignment(Qt::AlignCenter);
-
-        image_layout->addWidget(image_label);
-        image_layout->setContentsMargins(0, 0, 0, 0);
-        settings_layout->addWidget(image_container);
+        image_container->setIcon(QIcon(":/img/img/Agent.svg"));
+        agent_description->setText("Агент, который ориентируется в пространстве зная "
+                                   "только о клетках, находящихся в заданном радиусе обзора.");
 
         QLabel *view_range = new QLabel;
         view_range->setAlignment(Qt::AlignCenter);
+        view_range->setWordWrap(true);
         view_range->setText("Диапозон обзора (в клетках):");
         settings_layout->addWidget(view_range);
 
         QSpinBox *view_range_spin = new QSpinBox;
+        view_range_spin->setWrapping(true);
         view_range_spin->setRange(1, BLOCK_LIMIT);
         view_range_spin->setValue(agent->get_view_range());
         view_range_spin->setAlignment(Qt::AlignCenter);
 
-        connect(view_range_spin, QOverload<int>::of(&QSpinBox::valueChanged), [agent](int value){
+        connect(view_range_spin, QOverload<int>::of(&QSpinBox::valueChanged), this, [agent](int value){
             agent->set_view_range(value * SCALE_FACTOR);
         });
         settings_layout->addWidget(view_range_spin);
@@ -241,7 +265,55 @@ void MainWindow::setup_agent_settings(AgentObj* agent)
 
 void MainWindow::setup_cell_settings(CellItem* cell)
 {
+    QWidget *settings_container = new QWidget;
+    QVBoxLayout *settings_layout = new QVBoxLayout;
+    settings_container->setLayout(settings_layout);
 
+    QLabel *cell_name = new QLabel;
+    cell_name->setAlignment(Qt::AlignCenter);
+    cell_name->setWordWrap(true);
+    settings_layout->addWidget(cell_name);
+
+    QWidget *image_widget = new QWidget;
+    QVBoxLayout *image_layout = new QVBoxLayout;
+    image_layout->setAlignment(Qt::AlignCenter);
+
+    QPushButton *image_container = new QPushButton;
+    image_container->setFixedSize(100, 100);
+    image_container->setIconSize(QSize(95, 95));
+
+    image_layout->addWidget(image_container);
+    image_widget->setLayout(image_layout);
+    settings_layout->addWidget(image_widget);
+
+    QLabel *cell_description = new QLabel;
+    cell_description->setAlignment(Qt::AlignCenter);
+    cell_description->setWordWrap(true);
+    settings_layout->addWidget(cell_description);
+
+    switch(cell->get_type())
+    {
+    case CellType::Empty:
+        cell_name->setText("Пустая клетка");
+        image_container->setIcon(QIcon(":/img/img/EmptyCell.svg"));
+        cell_description->setText("Пустая клетка выступает в качестве фундамента для "
+                                  "построения среды, в которой агент будет обучаться.");
+        break;
+    case CellType::Floor:
+        cell_name->setText("Пол");
+        image_container->setIcon(QIcon(":/img/img/FloorCell.svg"));
+        cell_description->setText("Клетка пола, на которую можно поставить агента.");
+        break;
+    case CellType::Wall:
+        cell_name->setText("Стена");
+        image_container->setIcon(QIcon(":/img/img/WallWithBottom.svg"));
+        cell_description->setText("Клетка стены выступает в качестве препятствия, "
+                                  "которое агент не может пройти никаким образом.");
+        break;
+    }
+
+    ui->rl_settings_panel->setWidget(settings_container);
+    ui->rl_settings_panel->setWidgetResizable(true);
 }
 
 void MainWindow::on_create_proj_triggered()
@@ -302,6 +374,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::onScene_selection_changed()
 {
+    if (this->scene->is_in_interactive_mode())
+        return;
+
     clear_layout(ui->rl_settings_panel->widget()->layout());
 
     if (scene->selectedItems().size() == 0)

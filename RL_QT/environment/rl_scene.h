@@ -17,9 +17,9 @@ public:
     void change_selected_cells(CellType type);
     void delete_selected_objs();
     void add_agent(AgentType type);
-
-signals:
-    void selection_changed();
+    void set_agent_goal();
+    void remove_agent_goal();
+    bool is_in_interactive_mode();
 
 protected:
     void wheelEvent(QGraphicsSceneWheelEvent *event) override;
@@ -37,6 +37,7 @@ private:
     bool is_panning = false;
     bool is_changing_agent_pos = false;
     bool is_left_button_pressed = false;
+    bool is_goal_selection = false;
 
     QPointF selection_start;
     bool ctrl_pressed = false;
