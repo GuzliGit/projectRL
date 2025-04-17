@@ -126,6 +126,26 @@ void AgentObj::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
     QGraphicsPixmapItem::paint(painter, option, widget);
 
     if (selected) {
+
+        if (goal_cell)
+        {
+            qreal label_size = qMin(boundingRect().width(), boundingRect().height()) * 0.3;
+            QRectF label_rect(boundingRect().width() - label_size, boundingRect().height() - label_size, label_size, label_size);
+
+            painter->setPen(Qt::black);
+            painter->setBrush(Qt::green);
+            painter->drawEllipse(label_rect);
+
+            QRectF temp_rect = goal_cell->boundingRect();
+            QPointF goal_pos = mapFromScene(goal_cell->scenePos());
+            QRectF goal_rect(goal_pos.x() + temp_rect.width() - label_size, goal_pos.y() + temp_rect.height() - label_size, label_size, label_size);
+
+            painter->setPen(Qt::black);
+            painter->setBrush(Qt::green);
+            painter->setOpacity(1);
+            painter->drawEllipse(goal_rect);
+        }
+
         painter->save();
 
         painter->setPen(QPen(Qt::black, 2));

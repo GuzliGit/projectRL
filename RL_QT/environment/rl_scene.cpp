@@ -1,6 +1,7 @@
 #include "rl_scene.h"
 #include "environment/cellitem.h"
 #include "agent/agentobj.h"
+#include "mainwindow.h"
 
 #include <QKeyEvent>
 #include <QGraphicsSceneWheelEvent>
@@ -16,6 +17,12 @@ RL_scene::RL_scene(int width, int height, int scale_factor, QObject* parent) :
 {
     setSceneRect(0, 0, width * scale_factor, height * scale_factor);
     editor = new EnvironmentEditor();
+
+    MainWindow *w = dynamic_cast<MainWindow*>(this->parent());
+    if (w)
+    {
+        connect(w, &MainWindow::click_in_interactive_mode, this, &RL_scene::click_from_outside);
+    }
 }
 
 void RL_scene::fill_with_empty_cells()
@@ -40,6 +47,9 @@ void RL_scene::fill_with_empty_cells()
 
 void RL_scene::change_selected_cells(CellType type)
 {
+    if (is_in_interactive_mode())
+        return;
+
     for (auto cell : selected_cells)
     {
         for (auto agent : all_agents)
@@ -66,6 +76,9 @@ void RL_scene::change_selected_cells(CellType type)
 
 void RL_scene::delete_selected_objs()
 {
+    if (is_in_interactive_mode())
+        return;
+
     if (selected_cells.empty() && !selected_agents.empty())
     {
         for (auto agent : selected_agents)
@@ -106,19 +119,13 @@ void RL_scene::delete_selected_objs()
 
 void RL_scene::add_agent(AgentType type)
 {
-    if (selected_cells.size() == 0)
+    if ((selected_cells.size() == 0 && selected_agents.size() == 0) || is_in_interactive_mode())
         return;
 
-    editor->add_agents(selected_cells, type);
-    for (auto cell : selected_cells)
-    {
-        if (AgentObj* agent = dynamic_cast<AgentObj*>(itemAt(QPointF(cell->x(), cell->y()), QTransform())))
-        {
-            all_agents.append(agent);
-        }
-    }
+    editor->add_agents(selected_cells, selected_agents, all_agents, type);
 
     deselect_cells();
+    deselect_agents();
 }
 
 void RL_scene::set_agent_goal()
@@ -147,6 +154,35 @@ void RL_scene::remove_agent_goal()
 bool RL_scene::is_in_interactive_mode()
 {
     return is_goal_selection;
+}
+
+void RL_scene::load_cell(CellItem *cell)
+{
+    for (auto item : all_cells)
+    {
+        if (item->pos() == cell->pos())
+        {
+            all_cells.append(cell);
+            all_cells.removeOne(item);
+            this->removeItem(item);
+            this->addItem(cell);
+            return;
+        }
+    }
+}
+
+void RL_scene::load_agent(AgentObj *agent)
+{
+    all_agents.append(agent);
+    this->addItem(agent);
+}
+
+void RL_scene::update_appearance()
+{
+    for (auto cell : all_cells)
+    {
+        cell->update_cell_appearance();
+    }
 }
 
 void RL_scene::wheelEvent(QGraphicsSceneWheelEvent *event)
@@ -250,12 +286,25 @@ void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
     else if (event->button() == Qt::LeftButton && is_goal_selection)
     {
         CellItem *item = dynamic_cast<CellItem*>(itemAt(event->scenePos(), QTransform()));
+        bool is_already_goal = false;
 
         deselect_cells();
         if (item)
         {
             if (item->is_walkable() && selected_agents.size() == 1)
-                selected_agents.first()->set_goal(item);
+            {
+                for (auto agent : all_agents)
+                {
+                    if (agent == selected_agents.first())
+                        continue;
+
+                    if (item == agent->get_goal())
+                        is_already_goal = true;
+                }
+
+                if (!is_already_goal)
+                    selected_agents.first()->set_goal(item);
+            }
         }
 
         event->accept();
@@ -264,6 +313,18 @@ void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
     {
         deselect_cells();
         deselect_agents();
+
+        if (is_goal_selection)
+        {
+            QCursor c;
+            c.setShape(Qt::ArrowCursor);
+
+            QMainWindow *main_window = qobject_cast<QMainWindow*>(this->parent());
+            main_window->setCursor(c);
+
+            is_goal_selection = false;
+            emit update_settings();
+        }
 
         event->accept();
     }
@@ -438,6 +499,16 @@ void RL_scene::keyReleaseEvent(QKeyEvent *event)
         ctrl_pressed = false;
     }
     QGraphicsScene::keyReleaseEvent(event);
+}
+
+void RL_scene::click_from_outside()
+{
+    if (is_goal_selection)
+    {
+        deselect_cells();
+        is_goal_selection = false;
+        emit update_settings();
+    }
 }
 
 void RL_scene::synchronize_animation()

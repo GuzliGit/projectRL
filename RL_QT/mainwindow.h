@@ -24,6 +24,9 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+protected:
+    void mousePressEvent(QMouseEvent *event) override;
+
 private slots:
     void on_create_proj_triggered();
 
@@ -35,11 +38,21 @@ private slots:
 
     void onScene_selection_changed();
 
+    void on_save_proj_triggered();
+
+    void on_save_as_proj_triggered();
+
+    void on_open_proj_triggered();
+
+signals:
+    void click_in_interactive_mode();
+
 private:
     RL_scene *scene;
     QDockWidget *editor_dock;
     QDockWidget *log_dock;
     QDockWidget *settings_dock;
+    QString project_path = nullptr;
 
     Ui::MainWindow *ui;
     void setup_widgets();
@@ -49,5 +62,7 @@ private:
     void clear_layout(QLayout* layout);
     void setup_agent_settings(AgentObj* agent);
     void setup_cell_settings(CellItem* cell);
+    void save_scene(QString &path);
+    void load_scene(QString &path);
 };
 #endif // MAINWINDOW_H

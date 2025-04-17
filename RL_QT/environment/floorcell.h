@@ -7,7 +7,7 @@ class FloorCell : public CellItem
 {
     Q_OBJECT
 public:
-    FloorCell(QGraphicsItem *parent);
+    FloorCell(QGraphicsItem *parent = nullptr);
     virtual CellType get_type() const override { return CellType::Floor; }
     virtual void update_cell_appearance() override;
     virtual bool is_walkable() const override { return true; }

@@ -57,29 +57,53 @@ void EnvironmentEditor::change_cells(QList<CellItem*>& selected_cells, CellType 
     }
 }
 
-void EnvironmentEditor::add_agents(QList<CellItem*>& selected_cells, AgentType type)
+void EnvironmentEditor::add_agents(QList<CellItem*>& selected_cells, QList<AgentObj*>& selected_agents, QList<AgentObj*>& all_agents, AgentType type)
 {
     for (auto cell : selected_cells)
     {
-        if (cell->get_type() == CellType::Empty || cell->get_type() == CellType::Wall)
+        bool is_already_on_scene = false;
+
+        if (!cell->is_walkable())
+            continue;
+
+        for (auto agent : all_agents)
+        {
+            if (cell->pos() == agent->pos() && type != agent->get_type())
+            {
+                selected_agents.removeOne(agent);
+                all_agents.removeOne(agent);
+                cell->scene()->removeItem(agent);
+            }
+            else if (cell->pos() == agent->pos() && type == agent->get_type())
+                is_already_on_scene = true;
+        }
+
+        if (is_already_on_scene)
             continue;
 
         switch (type){
         case AgentType::LimitedView:
             AgentObj* agent = new AgentObj();
             agent->setPos(cell->pos());
+            all_agents.append(agent);
             cell->scene()->addItem(agent);
             break;
         }
     }
+
+    if (selected_agents.size() > 0)
+        change_agent(selected_agents, all_agents, type);
 }
 
-void EnvironmentEditor::change_agent(QList<AgentObj *> &selected_agents, AgentType type)
+void EnvironmentEditor::change_agent(QList<AgentObj *>& selected_agents, QList<AgentObj *>& all_agents, AgentType type)
 {
     for (int i = 0; i < selected_agents.size(); i++)
     {
         AgentObj* old_item = selected_agents[i];
         AgentObj* new_item = nullptr;
+
+        if (old_item->get_type() == type)
+            continue;
 
         switch (type) {
         case AgentType::LimitedView:
@@ -88,6 +112,10 @@ void EnvironmentEditor::change_agent(QList<AgentObj *> &selected_agents, AgentTy
         }
 
         if (new_item)
+        {
             selected_agents[i] = new_item;
+            all_agents.removeOne(old_item);
+            all_agents.append(new_item);
+        }
     }
 }

@@ -105,6 +105,8 @@
     </property>
     <addaction name="create_proj"/>
     <addaction name="open_proj"/>
+    <addaction name="save_proj"/>
+    <addaction name="save_as_proj"/>
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
@@ -178,6 +180,22 @@
    </property>
    <property name="shortcut">
     <string>Del</string>
+   </property>
+  </action>
+  <action name="save_proj">
+   <property name="text">
+    <string>Сохранить</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="save_as_proj">
+   <property name="text">
+    <string>Сохранить как</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
    </property>
   </action>
  </widget>

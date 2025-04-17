@@ -20,6 +20,9 @@ public:
     void set_agent_goal();
     void remove_agent_goal();
     bool is_in_interactive_mode();
+    void load_cell(CellItem* cell);
+    void load_agent(AgentObj* agent);
+    void update_appearance();
 
 protected:
     void wheelEvent(QGraphicsSceneWheelEvent *event) override;
@@ -28,6 +31,12 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void keyReleaseEvent(QKeyEvent *event) override;
+
+private slots:
+    void click_from_outside();
+
+signals:
+    void update_settings();
 
 private:
     EnvironmentEditor *editor;

@@ -4,6 +4,8 @@
 #include "custom_tools/widgetwithflowlayout.h"
 #include "agent/agentobj.h"
 #include "environment/cellitem.h"
+#include "environment/floorcell.h"
+#include "environment/wallcell.h"
 
 #include <QDockWidget>
 #include <QLabel>
@@ -18,6 +20,7 @@
 #include <QScrollArea>
 #include <QSettings>
 #include <QSpinBox>
+#include <QFileDialog>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -33,12 +36,31 @@ MainWindow::MainWindow(QWidget *parent)
     restoreState(settings.value("window_state").toByteArray());
 
     connect(scene, &RL_scene::selectionChanged, this, &MainWindow::onScene_selection_changed);
+    connect(scene, &RL_scene::update_settings, this, &MainWindow::onScene_selection_changed);
 }
 
 MainWindow::~MainWindow()
 {
     delete scene;
     delete ui;
+}
+
+void MainWindow::mousePressEvent(QMouseEvent *event)
+{
+    if (this->scene && this->scene->is_in_interactive_mode())
+    {
+        QCursor c;
+        c.setShape(Qt::ArrowCursor);
+        this->setCursor(c);
+
+        emit click_in_interactive_mode();
+
+        event->accept();
+    }
+    else
+    {
+        QMainWindow::mousePressEvent(event);
+    }
 }
 
 void MainWindow::setup_widgets()
@@ -316,6 +338,167 @@ void MainWindow::setup_cell_settings(CellItem* cell)
     ui->rl_settings_panel->setWidgetResizable(true);
 }
 
+void MainWindow::save_scene(QString &path)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly))
+    {
+        QMessageBox::warning(this, "Ошибка", "Не удалось открыть файл для сохранения проекта!");
+        return;
+    }
+
+    QDataStream out(&file);
+    out << scene->width();
+    out << scene->height();
+
+    for (QGraphicsItem* item : scene->items())
+    {
+        if (auto cell = dynamic_cast<CellItem*>(item))
+        {
+            out << quint8(0x01);
+            out << cell->get_type()
+                << cell->pos();
+
+            switch (cell->get_type())
+            {
+            case CellType::Empty:
+                break;
+            case CellType::Floor:
+                break;
+            case CellType::Wall:
+                break;
+                // Для уникальных свойств (если таковые будут)
+            }
+        }
+    }
+
+    for (QGraphicsItem* item : scene->items())
+    {
+        if (auto agent = dynamic_cast<AgentObj*>(item))
+        {
+            out << quint8(0x02);
+            out << agent->get_type()
+                << agent->pos();
+
+            if (agent->has_goal())
+                out << agent->get_goal()->pos();
+            else
+                out << QPointF(-10, -10);
+
+            switch (agent->get_type())
+            {
+            case AgentType::LimitedView:
+                out << (agent->get_view_range() * SCALE_FACTOR);
+                break;
+            }
+        }
+    }
+
+    file.close();
+}
+
+void MainWindow::load_scene(QString &path)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+    {
+        QMessageBox::warning(this, "Ошибка", "Не удалось открыть файл проекта!");
+        return;
+    }
+
+    QDataStream in(&file);
+
+    qreal width;
+    qreal height;
+
+    in >> width;
+    in >> height;
+
+    scene = new RL_scene(0, 0, SCALE_FACTOR, this);
+
+    connect(scene, &RL_scene::selectionChanged, this, &MainWindow::onScene_selection_changed);
+    connect(scene, &RL_scene::update_settings, this, &MainWindow::onScene_selection_changed);
+
+    scene->setSceneRect(0, 0, width, height);
+    ui->environment->setScene(scene);
+    scene->fill_with_empty_cells();
+
+    while (!in.atEnd())
+    {
+        quint8 marker;
+        in >> marker;
+
+        if (marker == 0x01)
+        {
+            CellType type;
+            QPointF pos;
+            in >> type >> pos;
+
+            switch (type) {
+            case CellType::Empty:
+            {
+                CellItem *cell = new CellItem();
+                cell->setPos(pos);
+                scene->load_cell(cell);
+                break;
+            }
+            case CellType::Floor:
+            {
+                FloorCell *cell = new FloorCell();
+                cell->setPos(pos);
+                scene->load_cell(cell);
+                break;
+            }
+            case CellType::Wall:
+            {
+                WallCell *cell = new WallCell();
+                cell->setPos(pos);
+                scene->load_cell(cell);
+                break;
+            }
+            }
+        }
+        else if (marker == 0x02)
+        {
+            AgentType type;
+            QPointF pos;
+            in >> type >> pos;
+
+            QPointF goal_pos;
+            in >> goal_pos;
+
+            CellItem *new_goal = nullptr;
+
+            if (goal_pos.x() > 0)
+            {
+                new_goal = dynamic_cast<CellItem*>(scene->items(goal_pos).first());
+            }
+
+            switch (type)
+            {
+            case AgentType::LimitedView:
+            {
+                AgentObj *agent = new AgentObj();
+                agent->setPos(pos);
+                scene->load_agent(agent);
+
+                int view_range;
+                in >> view_range;
+
+                agent->set_view_range(view_range);
+
+                if (new_goal != nullptr)
+                    agent->set_goal(new_goal);
+
+                break;
+            }
+            }
+        }
+    }
+
+    file.close();
+}
+
 void MainWindow::on_create_proj_triggered()
 {
     CreateProj_Dialog w(BLOCK_LIMIT, this);
@@ -329,7 +512,15 @@ void MainWindow::on_create_proj_triggered()
 
             if (reply == QMessageBox::Yes)
             {
-                qDebug() << "Сохранение текущего проекта и создание нового";
+                on_save_proj_triggered();
+                scene = new RL_scene(0, 0, SCALE_FACTOR, this);
+
+                connect(scene, &RL_scene::selectionChanged, this, &MainWindow::onScene_selection_changed);
+                connect(scene, &RL_scene::update_settings, this, &MainWindow::onScene_selection_changed);
+
+                scene->setSceneRect(0, 0, w.get_width() * SCALE_FACTOR, w.get_height() * SCALE_FACTOR);
+                ui->environment->setScene(scene);
+                scene->fill_with_empty_cells();
                 return;
             }
             else
@@ -367,6 +558,17 @@ void MainWindow::on_delete_obj_triggered()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    if (scene->width() > 0)
+    {
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "Подтверждение", "Сохранить изменения перед выходом?");
+
+        if (reply == QMessageBox::Yes)
+        {
+            on_save_proj_triggered();
+        }
+    }
+
     QSettings settings("badin_AP-126", "RL_studio");
     settings.setValue("window_state", saveState());
     event->accept();
@@ -395,6 +597,107 @@ void MainWindow::onScene_selection_changed()
         {
             setup_cell_settings(cell);
         }
+    }
+}
+
+
+void MainWindow::on_save_proj_triggered()
+{
+    if (scene->width() <= 0)
+        return;
+
+    if (project_path != nullptr)
+    {
+        qDebug() << "File saved";
+        save_scene(project_path);
+        return;
+    }
+
+    QString filename = QFileDialog::getSaveFileName(this, tr("Сохранить сцену"), QDir::homePath(),
+                                                    tr("Бинарные файлы сцены (*.scn)"));
+
+    if (!filename.isEmpty())
+    {
+        if (!filename.endsWith(".scn", Qt::CaseInsensitive))
+            filename += ".scn";
+
+        save_scene(filename);
+        project_path = filename;
+        qDebug() << "File saved";
+    }
+}
+
+
+void MainWindow::on_save_as_proj_triggered()
+{
+    if (scene->width() <= 0)
+        return;
+
+    QString filename = QFileDialog::getSaveFileName(this, tr("Сохранить сцену"), QDir::homePath(),
+                                                    tr("Бинарные файлы сцены (*.scn)"));
+
+    if (!filename.isEmpty())
+    {
+        if (!filename.endsWith(".scn", Qt::CaseInsensitive))
+            filename += ".scn";
+
+        save_scene(filename);
+        project_path = filename;
+        qDebug() << "File saved";
+    }
+}
+
+
+void MainWindow::on_open_proj_triggered()
+{
+    if (scene->width() > 0)
+    {
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "Подтверждение", "Сохранить изменения и перейти к новому проекту?");
+
+        if (reply == QMessageBox::Yes)
+        {
+            if (project_path != nullptr)
+            {
+                qDebug() << "File saved";
+                save_scene(project_path);
+            }
+            else
+            {
+                QString filename = QFileDialog::getSaveFileName(this, tr("Сохранить сцену"), QDir::homePath(),
+                                                                tr("Бинарные файлы сцены (*.scn)"));
+
+                if (!filename.isEmpty())
+                {
+                    if (!filename.endsWith(".scn", Qt::CaseInsensitive))
+                        filename += ".scn";
+
+                    save_scene(filename);
+                    project_path = filename;
+                    qDebug() << "File saved";
+                }
+            }
+        }
+        else
+            return;
+    }
+
+    project_path = nullptr;
+    QString filename = QFileDialog::getOpenFileName(this, tr("Открыть сцену"), QDir::homePath(),
+                                                    tr("Бинарные файлы сцены (*.scn)"));
+
+    if (!filename.isEmpty())
+    {
+        if (!filename.endsWith(".scn", Qt::CaseInsensitive))
+        {
+            qDebug() << "Incorrect foramt of file";
+            return;
+        }
+
+        load_scene(filename);
+        project_path = filename;
+        scene->update_appearance();
+        qDebug() << "File opened";
     }
 }
 

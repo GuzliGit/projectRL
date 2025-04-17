@@ -9,8 +9,10 @@ class EnvironmentEditor
 public:
     EnvironmentEditor();
     void change_cells(QList<CellItem*>& selected_cells, CellType type);
-    void add_agents(QList<CellItem*>& selected_cells, AgentType type);
-    void change_agent(QList<AgentObj*>& selected_agents, AgentType type);
+    void add_agents(QList<CellItem*>& selected_cells, QList<AgentObj*>& selected_agents, QList<AgentObj*>& all_agents, AgentType type);
+
+private:
+    void change_agent(QList<AgentObj*>& selected_agents, QList<AgentObj *>& all_agents, AgentType type);
 };
 
 #endif // ENVIRONMENTEDITOR_H
