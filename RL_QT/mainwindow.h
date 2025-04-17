@@ -44,6 +44,12 @@ private slots:
 
     void on_open_proj_triggered();
 
+    void on_start_learning_triggered();
+
+    void on_Q_learn_choice_triggered();
+
+    void on_DQN_choice_triggered();
+
 signals:
     void click_in_interactive_mode();
 
@@ -55,6 +61,7 @@ private:
     QString project_path = nullptr;
 
     Ui::MainWindow *ui;
+    void setup_toolbar();
     void setup_widgets();
     QPushButton* create_editor_panel_button(QString btn_name, int btn_w, int btn_h, QString icon_path, QSize icon_size, QWidget *parent);
     void setup_editor_panel_widgets();

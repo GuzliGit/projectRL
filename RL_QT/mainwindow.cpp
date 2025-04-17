@@ -21,6 +21,7 @@
 #include <QSettings>
 #include <QSpinBox>
 #include <QFileDialog>
+#include <QComboBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -28,6 +29,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    setup_toolbar();
     setup_widgets();
     setup_editor_panel_widgets();
     setup_settings_panel_widgets();
@@ -699,5 +701,80 @@ void MainWindow::on_open_proj_triggered()
         scene->update_appearance();
         qDebug() << "File opened";
     }
+}
+
+
+void MainWindow::on_start_learning_triggered()
+{
+    if (!scene->is_correct_environment())
+    {
+        QMessageBox::warning(this, "Ошибка", "Проверьте построенную среду! (должен быть как минимум 1 агент; все клетки, кроме пустых, должны быть достижимы)");
+        return;
+    }
+
+    qDebug() << "start learning";
+}
+
+
+void MainWindow::on_Q_learn_choice_triggered()
+{
+    ui->Q_learn_choice->setChecked(true);
+    ui->DQN_choice->setChecked(false);
+}
+
+
+void MainWindow::on_DQN_choice_triggered()
+{
+    ui->Q_learn_choice->setChecked(false);
+    ui->DQN_choice->setChecked(true);
+}
+
+void MainWindow::setup_toolbar()
+{
+    QComboBox *algorithms = new QComboBox;
+
+    algorithms->addItem(ui->Q_learn_choice->text());
+    algorithms->addItem(ui->DQN_choice->text());
+
+    if (ui->Q_learn_choice->isChecked())
+    {
+        algorithms->setCurrentIndex(0);
+    }
+    else if (ui->DQN_choice->isChecked())
+    {
+        algorithms->setCurrentIndex(1);
+    }
+
+    ui->tool_bar->addAction(ui->center_navigation);
+    ui->tool_bar->addAction(ui->start_learning);
+    ui->tool_bar->addWidget(algorithms);
+    ui->tool_bar->addAction(ui->delete_obj);
+
+    connect(algorithms, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        if (index == 0)
+        {
+            ui->Q_learn_choice->setChecked(true);
+            ui->DQN_choice->setChecked(false);
+        }
+        else if (index == 1)
+        {
+            ui->Q_learn_choice->setChecked(false);
+            ui->DQN_choice->setChecked(true);
+        }
+    });
+
+    connect(ui->Q_learn_choice, &QAction::triggered, this, [this, algorithms]() {
+        if (ui->Q_learn_choice->isChecked())
+        {
+            algorithms->setCurrentIndex(0);
+        }
+    });
+
+    connect(ui->DQN_choice, &QAction::triggered, this, [this, algorithms]() {
+        if (ui->DQN_choice->isChecked())
+        {
+            algorithms->setCurrentIndex(1);
+        }
+    });
 }
 

@@ -3,6 +3,7 @@
 #include "agent/agentobj.h"
 #include "mainwindow.h"
 
+#include <queue>
 #include <QKeyEvent>
 #include <QGraphicsSceneWheelEvent>
 #include <QGraphicsView>
@@ -183,6 +184,23 @@ void RL_scene::update_appearance()
     {
         cell->update_cell_appearance();
     }
+}
+
+bool RL_scene::is_correct_environment()
+{
+    if (this->width() <= 0 || all_cells.empty() || all_agents.empty())
+        return false;
+
+    for (auto agent : all_agents)
+    {
+        if (!agent->has_goal())
+            return false;
+    }
+
+    if (!is_cells_connected())
+        return false;
+
+    return true;
 }
 
 void RL_scene::wheelEvent(QGraphicsSceneWheelEvent *event)
@@ -392,8 +410,18 @@ void RL_scene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     else if (selected_agents.size() == 1 && is_left_button_pressed)
     {
         CellItem *item = dynamic_cast<CellItem*>(itemAt(event->scenePos(), QTransform()));
+        bool is_already_goal = false;
 
-        if (item && item->is_walkable())
+        for (auto agent : all_agents)
+        {
+            if (agent->has_goal() && agent->get_goal() == item)
+            {
+                is_already_goal = true;
+                break;
+            }
+        }
+
+        if (item && item->is_walkable() && !is_already_goal)
         {
             is_changing_agent_pos = true;
             selected_agents.first()->setPos(item->pos());
@@ -550,4 +578,70 @@ void RL_scene::deselect_agents()
         agent->set_selected(false);
     }
     selected_agents.clear();
+}
+
+bool RL_scene::is_cells_connected()
+{
+    CellItem *temp = new CellItem;
+    int width_scale = temp->get_width();
+    int height_scale = temp->get_height();
+    int rows = this->width() / width_scale;
+    int cols = this->height() / height_scale;
+    bool is_free_cells = false;
+
+    QPointF search_start = all_agents.first()->pos();
+
+    std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
+    std::queue<QPointF> q;
+    q.push(search_start);
+    visited[search_start.x() / width_scale][search_start.y() / height_scale] = true;
+
+    const std::vector<QPointF> directions = { QPointF(-width_scale, 0),
+                                             QPointF(width_scale, 0),
+                                             QPointF(0, height_scale),
+                                             QPointF(0, -height_scale)};
+
+    while (!q.empty())
+    {
+        QPointF point = q.front();
+        q.pop();
+
+        for (const auto& next : directions)
+        {
+            int nx = point.x() + next.x();
+            int ny = point.y() + next.y();
+
+            if (nx >= 0 && nx / width_scale < rows && ny >= 0 && ny / height_scale < cols)
+            {
+                if (!visited[nx / width_scale][ny / height_scale])
+                {
+                    CellItem *cell = dynamic_cast<CellItem*>(this->items(QPointF(nx, ny)).first());
+                    AgentObj *agent = dynamic_cast<AgentObj*>(this->items(QPointF(nx, ny)).first());
+
+                    if ((cell && cell->is_walkable()) || agent)
+                    {
+                        is_free_cells = cell ? true : is_free_cells;
+                        visited[nx / width_scale][ny / height_scale] = true;
+                        q.push(QPointF(nx, ny));
+                    }
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            CellItem *cell = dynamic_cast<CellItem*>(this->items(QPointF(i * width_scale, j * height_scale)).first());
+            AgentObj *agent = dynamic_cast<AgentObj*>(this->items(QPointF(i * width_scale, j * height_scale)).first());
+
+            if ((cell && cell->is_walkable() && !visited[i][j]) || (agent && !visited[i][j]))
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }

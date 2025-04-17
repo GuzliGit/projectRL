@@ -23,6 +23,7 @@ public:
     void load_cell(CellItem* cell);
     void load_agent(AgentObj* agent);
     void update_appearance();
+    bool is_correct_environment();
 
 protected:
     void wheelEvent(QGraphicsSceneWheelEvent *event) override;
@@ -60,6 +61,7 @@ private:
     void update_all_cells();
     void deselect_cells();
     void deselect_agents();
+    bool is_cells_connected();
 };
 
 #endif // RL_SCENE_H

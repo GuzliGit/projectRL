@@ -112,12 +112,25 @@
     <property name="title">
      <string>Правка</string>
     </property>
-    <addaction name="action_3"/>
-    <addaction name="action_4"/>
     <addaction name="delete_obj"/>
+   </widget>
+   <widget class="QMenu" name="menu_3">
+    <property name="title">
+     <string>Сборка</string>
+    </property>
+    <widget class="QMenu" name="menu_4">
+     <property name="title">
+      <string>Алгоритм</string>
+     </property>
+     <addaction name="Q_learn_choice"/>
+     <addaction name="DQN_choice"/>
+    </widget>
+    <addaction name="start_learning"/>
+    <addaction name="menu_4"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_2"/>
+   <addaction name="menu_3"/>
   </widget>
   <widget class="QToolBar" name="tool_bar">
    <property name="windowTitle">
@@ -129,8 +142,6 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="center_navigation"/>
-   <addaction name="delete_obj"/>
   </widget>
   <action name="create_proj">
    <property name="text">
@@ -148,16 +159,6 @@
     <string>Ctrl+O</string>
    </property>
   </action>
-  <action name="action_3">
-   <property name="text">
-    <string>Отменить</string>
-   </property>
-  </action>
-  <action name="action_4">
-   <property name="text">
-    <string>Повторить</string>
-   </property>
-  </action>
   <action name="center_navigation">
    <property name="icon">
     <iconset resource="resources.qrc">
@@ -171,6 +172,9 @@
    </property>
   </action>
   <action name="delete_obj">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="resources.qrc">
      <normaloff>:/img/img/Delete.svg</normaloff>:/img/img/Delete.svg</iconset>
@@ -196,6 +200,37 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+S</string>
+   </property>
+  </action>
+  <action name="start_learning">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/img/img/Execute.svg</normaloff>:/img/img/Execute.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Запустить</string>
+   </property>
+   <property name="shortcut">
+    <string>F5</string>
+   </property>
+  </action>
+  <action name="Q_learn_choice">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Q-learning</string>
+   </property>
+  </action>
+  <action name="DQN_choice">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;DQN</string>
    </property>
   </action>
  </widget>

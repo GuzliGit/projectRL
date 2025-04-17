@@ -62,23 +62,30 @@ void EnvironmentEditor::add_agents(QList<CellItem*>& selected_cells, QList<Agent
     for (auto cell : selected_cells)
     {
         bool is_already_on_scene = false;
+        bool is_goal = false;
 
         if (!cell->is_walkable())
             continue;
 
         for (auto agent : all_agents)
         {
-            if (cell->pos() == agent->pos() && type != agent->get_type())
+            if (is_already_on_scene || is_goal)
+                break;
+
+            if (cell->pos() == agent->pos() && type != agent->get_type() && !is_already_on_scene)
             {
                 selected_agents.removeOne(agent);
                 all_agents.removeOne(agent);
                 cell->scene()->removeItem(agent);
             }
-            else if (cell->pos() == agent->pos() && type == agent->get_type())
+            else if (cell->pos() == agent->pos() && type == agent->get_type() && !is_already_on_scene)
                 is_already_on_scene = true;
+
+            if (agent->has_goal() && agent->get_goal() == cell)
+                is_goal = true;
         }
 
-        if (is_already_on_scene)
+        if (is_already_on_scene || is_goal)
             continue;
 
         switch (type){
