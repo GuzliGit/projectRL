@@ -15,7 +15,7 @@ AgentObj::AgentObj(QGraphicsItem *parent) :
     QPixmap pixmap(":/img/img/Agent.svg");
     width = pixmap.width();
     height = pixmap.height();
-    view_range = MIN_VIEW_RANGE;
+    //view_range = MIN_VIEW_RANGE;
 
     goal_pixmap = new QGraphicsPixmapItem;
     goal_pixmap->setPixmap(QPixmap(":/img/img/Goal.svg"));
@@ -47,10 +47,10 @@ int AgentObj::get_height()
     return height;
 }
 
-int AgentObj::get_view_range()
-{
-    return view_range / width;
-}
+// int AgentObj::get_view_range()
+// {
+//     return view_range / width;
+// }
 
 void AgentObj::set_selected(bool agent_selected)
 {
@@ -112,14 +112,43 @@ void AgentObj::remove_goal()
     this->scene()->removeItem(goal_pixmap);
 }
 
-void AgentObj::set_view_range(int range)
+short AgentObj::get_current_state()
 {
-    if (range < MIN_VIEW_RANGE)
-        return;
-
-    view_range = range;
-    this->scene()->update();
+    int row_pos = this->pos().x() / width;
+    int cols_below = this->pos().y() / height;
+    int rows_shift = cols_below * this->scene()->width() / width;
+    return (rows_shift + row_pos);
 }
+
+void AgentObj::save_start_point()
+{
+    start_pos = this->pos();
+}
+
+void AgentObj::reset_pos()
+{
+    if (start_pos.x() >= 0)
+        this->setPos(start_pos);
+}
+
+bool AgentObj::is_done()
+{
+    return done;
+}
+
+void AgentObj::set_done(bool done_status)
+{
+    done = done_status;
+}
+
+// void AgentObj::set_view_range(int range)
+// {
+//     if (range < MIN_VIEW_RANGE)
+//         return;
+
+//     view_range = range;
+//     this->scene()->update();
+// }
 
 void AgentObj::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
@@ -146,15 +175,15 @@ void AgentObj::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
             painter->drawEllipse(goal_rect);
         }
 
-        painter->save();
+        // painter->save();
 
-        painter->setPen(QPen(Qt::black, 2));
-        painter->setOpacity(0.8);
-        painter->setBrush(Qt::NoBrush);
+        // painter->setPen(QPen(Qt::black, 2));
+        // painter->setOpacity(0.8);
+        // painter->setBrush(Qt::NoBrush);
 
-        painter->drawEllipse(boundingRect().center(), view_range, view_range);
+        // painter->drawEllipse(boundingRect().center(), view_range + 16, view_range + 16);
 
-        painter->restore();
+        // painter->restore();
     }
 }
 

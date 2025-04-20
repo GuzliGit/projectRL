@@ -3,12 +3,15 @@
 
 #define SCALE_FACTOR 32
 #define BLOCK_LIMIT 32
+#define MAX_EPISODES 10000
 
 #include "qdockwidget.h"
 #include "environment/rl_scene.h"
 
 #include <QMainWindow>
 #include <QPushButton>
+#include <QComboBox>
+#include <QtCharts/QtCharts>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -58,6 +61,16 @@ private:
     QDockWidget *editor_dock;
     QDockWidget *log_dock;
     QDockWidget *settings_dock;
+    QDockWidget *learning_dock;
+
+    QSpinBox *episode_spin;
+    QDoubleSpinBox *alpha_spin;
+    QDoubleSpinBox *gamma_spin;
+    QDoubleSpinBox *start_epsilon_spin;
+    QChart *learning_chart;
+    QLineSeries *reward_series;
+
+    QComboBox *algorithms;
     QString project_path = nullptr;
 
     Ui::MainWindow *ui;
@@ -69,6 +82,8 @@ private:
     void clear_layout(QLayout* layout);
     void setup_agent_settings(AgentObj* agent);
     void setup_cell_settings(CellItem* cell);
+    void setup_learning_panel_widgets();
+    void setup_q_learn_panel();
     void save_scene(QString &path);
     void load_scene(QString &path);
 };

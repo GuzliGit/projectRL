@@ -1,12 +1,22 @@
 #ifndef RL_SCENE_H
 #define RL_SCENE_H
 
+#define WALL_REWARD -5
+#define AGENT_COLLISION_REWARD -3
+#define FLOOR_REWARD -1
+#define GOAL_REWARD 120
+
 #include "environment/cellitem.h"
 #include "environment/environmenteditor.h"
 #include "agent/agentobj.h"
 
 #include <QGraphicsScene>
 #include <QPointF>
+
+enum TrainAlgorithms
+{
+    QLearn
+};
 
 class RL_scene : public QGraphicsScene
 {
@@ -24,6 +34,7 @@ public:
     void load_agent(AgentObj* agent);
     void update_appearance();
     bool is_correct_environment();
+    void start_qlearn(double alpha_t, double gamma_t, double epsilon_t, int episodes_count);
 
 protected:
     void wheelEvent(QGraphicsSceneWheelEvent *event) override;
@@ -62,6 +73,13 @@ private:
     void deselect_cells();
     void deselect_agents();
     bool is_cells_connected();
+    short *get_agents_states();
+    signed char *set_actions_get_rewards(char *actions);
+    bool is_new_point_inside_scene(QPointF new_point);
+    signed char execute_action(int agent_id, QPointF new_pos);
+    char *get_agents_done_status();
+    void reset_env();
+    void prepare_for_learning();
 };
 
 #endif // RL_SCENE_H

@@ -22,6 +22,7 @@
 #include <QSpinBox>
 #include <QFileDialog>
 #include <QComboBox>
+#include <QFormLayout>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -33,6 +34,10 @@ MainWindow::MainWindow(QWidget *parent)
     setup_widgets();
     setup_editor_panel_widgets();
     setup_settings_panel_widgets();
+    setup_learning_panel_widgets();
+
+    algorithms->setCurrentIndex(0);
+    setup_q_learn_panel();
 
     QSettings settings("badin_AP-126", "RL_studio");
     restoreState(settings.value("window_state").toByteArray());
@@ -79,17 +84,23 @@ void MainWindow::setup_widgets()
     settings_dock = new QDockWidget("Настройки", this);
     settings_dock->setObjectName("settings");
 
+    learning_dock = new QDockWidget("Обучение", this);
+    learning_dock->setObjectName("learn");
+
     editor_dock->setWidget(ui->editor_panel);
     log_dock->setWidget(ui->log_panel);
     settings_dock->setWidget(ui->rl_settings_panel);
+    learning_dock->setWidget(ui->learning_panel);
 
     addDockWidget(Qt::LeftDockWidgetArea, editor_dock);
     addDockWidget(Qt::BottomDockWidgetArea, log_dock);
     addDockWidget(Qt::RightDockWidgetArea, settings_dock);
+    addDockWidget(Qt::BottomDockWidgetArea, learning_dock);
 
     editor_dock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     log_dock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     settings_dock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    learning_dock->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
 
     setCentralWidget(ui->environment);
 }
@@ -160,9 +171,9 @@ void MainWindow::setup_editor_panel_widgets()
     // Раздел с агентами
     WidgetWithFlowLayout *agent_tab = new WidgetWithFlowLayout;
 
-    QPushButton *def_agent = create_editor_panel_button("С обзором", 95, 95, ":/img/img/Agent.svg",
+    QPushButton *def_agent = create_editor_panel_button("Базовый", 95, 95, ":/img/img/Agent.svg",
                                                         QSize(54, 54), agent_tab);
-    AgentType ag_type = AgentType::LimitedView;
+    AgentType ag_type = AgentType::Default;
     connect(def_agent, &QPushButton::pressed, this, [this, ag_type](){
         this->scene->add_agent(ag_type);
     });
@@ -257,29 +268,29 @@ void MainWindow::setup_agent_settings(AgentObj* agent)
 
     switch (agent->get_type())
     {
-    case AgentType::LimitedView:
+    case AgentType::Default:
 
-        agent_name->setText("Агент с ограниченным обзором");
+        agent_name->setText("Базовая реализация агента");
         image_container->setIcon(QIcon(":/img/img/Agent.svg"));
-        agent_description->setText("Агент, который ориентируется в пространстве зная "
-                                   "только о клетках, находящихся в заданном радиусе обзора.");
+        agent_description->setText("Агент, который ориентируется в пространстве, зная "
+                                   "о расположении клеток заранее.");
 
-        QLabel *view_range = new QLabel;
-        view_range->setAlignment(Qt::AlignCenter);
-        view_range->setWordWrap(true);
-        view_range->setText("Диапозон обзора (в клетках):");
-        settings_layout->addWidget(view_range);
+        // QLabel *view_range = new QLabel;
+        // view_range->setAlignment(Qt::AlignCenter);
+        // view_range->setWordWrap(true);
+        // view_range->setText("Диапозон обзора (в клетках):");
+        // settings_layout->addWidget(view_range);
 
-        QSpinBox *view_range_spin = new QSpinBox;
-        view_range_spin->setWrapping(true);
-        view_range_spin->setRange(1, BLOCK_LIMIT);
-        view_range_spin->setValue(agent->get_view_range());
-        view_range_spin->setAlignment(Qt::AlignCenter);
+        // QSpinBox *view_range_spin = new QSpinBox;
+        // view_range_spin->setWrapping(true);
+        // view_range_spin->setRange(1, BLOCK_LIMIT);
+        // view_range_spin->setValue(agent->get_view_range());
+        // view_range_spin->setAlignment(Qt::AlignCenter);
 
-        connect(view_range_spin, QOverload<int>::of(&QSpinBox::valueChanged), this, [agent](int value){
-            agent->set_view_range(value * SCALE_FACTOR);
-        });
-        settings_layout->addWidget(view_range_spin);
+        // connect(view_range_spin, QOverload<int>::of(&QSpinBox::valueChanged), this, [agent](int value){
+        //     agent->set_view_range(value * SCALE_FACTOR);
+        // });
+        // settings_layout->addWidget(view_range_spin);
         break;
     }
 
@@ -340,6 +351,76 @@ void MainWindow::setup_cell_settings(CellItem* cell)
     ui->rl_settings_panel->setWidgetResizable(true);
 }
 
+void MainWindow::setup_learning_panel_widgets()
+{
+    QWidget *learning_container = new QWidget;
+    QHBoxLayout *learning_layout = new QHBoxLayout;
+    learning_container->setLayout(learning_layout);
+
+    ui->learning_panel->setWidget(learning_container);
+    ui->learning_panel->setWidgetResizable(true);
+}
+
+void MainWindow::setup_q_learn_panel()
+{
+    QWidget *learning_container = new QWidget;
+    QHBoxLayout *learning_layout = new QHBoxLayout;
+    learning_container->setLayout(learning_layout);
+
+    // Левая панель
+    QScrollArea *parameters_area = new QScrollArea();
+    QWidget *parameters_widget = new QWidget();
+    QFormLayout *form_layout = new QFormLayout(parameters_widget);
+
+    episode_spin = new QSpinBox();
+    episode_spin->setWrapping(true);
+    episode_spin->setRange(1, MAX_EPISODES);
+    episode_spin->setValue(100);
+    episode_spin->setAlignment(Qt::AlignCenter);
+    form_layout->addRow("Эпизоды:", episode_spin);
+
+    alpha_spin = new QDoubleSpinBox();
+    alpha_spin->setWrapping(true);
+    alpha_spin->setRange(0.05, 1.0);
+    alpha_spin->setSingleStep(0.05);
+    alpha_spin->setValue(0.3);
+    alpha_spin->setAlignment(Qt::AlignCenter);
+    form_layout->addRow("Альфа:", alpha_spin);
+
+    gamma_spin = new QDoubleSpinBox();
+    gamma_spin->setWrapping(true);
+    gamma_spin->setRange(0.05, 1.0);
+    gamma_spin->setSingleStep(0.05);
+    gamma_spin->setValue(0.9);
+    gamma_spin->setAlignment(Qt::AlignCenter);
+    form_layout->addRow("Гамма:", gamma_spin);
+
+    start_epsilon_spin = new QDoubleSpinBox();
+    start_epsilon_spin->setWrapping(true);
+    start_epsilon_spin->setRange(0.05, 1.0);
+    start_epsilon_spin->setSingleStep(0.05);
+    start_epsilon_spin->setValue(1.0);
+    start_epsilon_spin->setAlignment(Qt::AlignCenter);
+    form_layout->addRow("Нач. эпсилон:", start_epsilon_spin);
+
+    parameters_area->setWidget(parameters_widget);
+    parameters_area->setWidgetResizable(true);
+
+    // Правая панель
+    learning_chart = new QChart();
+    reward_series = new QLineSeries();
+    learning_chart->addSeries(reward_series);
+    learning_chart->createDefaultAxes();
+    QChartView *chart_view = new QChartView();
+    chart_view->setRenderHint(QPainter::Antialiasing);
+
+    learning_layout->addWidget(parameters_area, 1);
+    learning_layout->addWidget(chart_view, 3);
+
+    ui->learning_panel->setWidget(learning_container);
+    ui->learning_panel->setWidgetResizable(true);
+}
+
 void MainWindow::save_scene(QString &path)
 {
     QFile file(path);
@@ -389,8 +470,8 @@ void MainWindow::save_scene(QString &path)
 
             switch (agent->get_type())
             {
-            case AgentType::LimitedView:
-                out << (agent->get_view_range() * SCALE_FACTOR);
+            case AgentType::Default:
+                //out << (agent->get_view_range() * SCALE_FACTOR);
                 break;
             }
         }
@@ -471,23 +552,23 @@ void MainWindow::load_scene(QString &path)
 
             CellItem *new_goal = nullptr;
 
-            if (goal_pos.x() > 0)
+            if (goal_pos.x() >= 0)
             {
                 new_goal = dynamic_cast<CellItem*>(scene->items(goal_pos).first());
             }
 
             switch (type)
             {
-            case AgentType::LimitedView:
+            case AgentType::Default:
             {
                 AgentObj *agent = new AgentObj();
                 agent->setPos(pos);
                 scene->load_agent(agent);
 
-                int view_range;
-                in >> view_range;
+                // int view_range;
+                // in >> view_range;
 
-                agent->set_view_range(view_range);
+                //agent->set_view_range(view_range);
 
                 if (new_goal != nullptr)
                     agent->set_goal(new_goal);
@@ -712,7 +793,21 @@ void MainWindow::on_start_learning_triggered()
         return;
     }
 
-    qDebug() << "start learning";
+    TrainAlgorithms algorithm = (TrainAlgorithms)algorithms->currentIndex();
+    switch (algorithm) {
+    case TrainAlgorithms::QLearn:
+    {
+        double alpha = alpha_spin->value();
+        double gamma = gamma_spin->value();
+        double epsilon = start_epsilon_spin->value();
+        int episodes = episode_spin->value();
+
+        scene->start_qlearn(alpha, gamma, epsilon, episodes);
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 
@@ -720,6 +815,9 @@ void MainWindow::on_Q_learn_choice_triggered()
 {
     ui->Q_learn_choice->setChecked(true);
     ui->DQN_choice->setChecked(false);
+
+    clear_layout(ui->learning_panel->widget()->layout());
+    setup_q_learn_panel();
 }
 
 
@@ -727,11 +825,13 @@ void MainWindow::on_DQN_choice_triggered()
 {
     ui->Q_learn_choice->setChecked(false);
     ui->DQN_choice->setChecked(true);
+
+    clear_layout(ui->learning_panel->widget()->layout());
 }
 
 void MainWindow::setup_toolbar()
 {
-    QComboBox *algorithms = new QComboBox;
+    algorithms = new QComboBox;
 
     algorithms->addItem(ui->Q_learn_choice->text());
     algorithms->addItem(ui->DQN_choice->text());
@@ -755,22 +855,27 @@ void MainWindow::setup_toolbar()
         {
             ui->Q_learn_choice->setChecked(true);
             ui->DQN_choice->setChecked(false);
+
+            clear_layout(ui->learning_panel->widget()->layout());
+            setup_q_learn_panel();
         }
         else if (index == 1)
         {
             ui->Q_learn_choice->setChecked(false);
             ui->DQN_choice->setChecked(true);
+
+            clear_layout(ui->learning_panel->widget()->layout());
         }
     });
 
-    connect(ui->Q_learn_choice, &QAction::triggered, this, [this, algorithms]() {
+    connect(ui->Q_learn_choice, &QAction::triggered, this, [this]() {
         if (ui->Q_learn_choice->isChecked())
         {
             algorithms->setCurrentIndex(0);
         }
     });
 
-    connect(ui->DQN_choice, &QAction::triggered, this, [this, algorithms]() {
+    connect(ui->DQN_choice, &QAction::triggered, this, [this]() {
         if (ui->DQN_choice->isChecked())
         {
             algorithms->setCurrentIndex(1);

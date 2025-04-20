@@ -1,5 +1,5 @@
 QT       += core gui
-
+QT += charts
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++17
@@ -11,6 +11,7 @@ CONFIG += c++17
 SOURCES += \
     agent/agentfactory.cpp \
     agent/agentobj.cpp \
+    algorithms/q_learn_exp.c \
     createproj_dialog.cpp \
     custom_tools/miniflowlayout.cpp \
     custom_tools/widgetwithflowlayout.cpp \
@@ -26,6 +27,7 @@ SOURCES += \
 HEADERS += \
     agent/agentfactory.h \
     agent/agentobj.h \
+    algorithms/q_learn_exp.h \
     createproj_dialog.h \
     custom_tools/miniflowlayout.h \
     custom_tools/widgetwithflowlayout.h \

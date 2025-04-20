@@ -89,7 +89,7 @@ void EnvironmentEditor::add_agents(QList<CellItem*>& selected_cells, QList<Agent
             continue;
 
         switch (type){
-        case AgentType::LimitedView:
+        case AgentType::Default:
             AgentObj* agent = new AgentObj();
             agent->setPos(cell->pos());
             all_agents.append(agent);
@@ -113,7 +113,7 @@ void EnvironmentEditor::change_agent(QList<AgentObj *>& selected_agents, QList<A
             continue;
 
         switch (type) {
-        case AgentType::LimitedView:
+        case AgentType::Default:
             new_item = AgentFactory::convert_agent<AgentObj>(old_item);
             break;
         }

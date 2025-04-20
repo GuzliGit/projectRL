@@ -2,6 +2,7 @@
 #include "environment/cellitem.h"
 #include "agent/agentobj.h"
 #include "mainwindow.h"
+#include "algorithms/q_learn_exp.h"
 
 #include <queue>
 #include <QKeyEvent>
@@ -644,4 +645,239 @@ bool RL_scene::is_cells_connected()
     }
 
     return true;
+}
+
+void RL_scene::start_qlearn(double alpha_t, double gamma_t, double epsilon_t, int episodes_count)
+{
+    deselect_agents();
+    deselect_cells();
+
+    short state_size = this->width() / SCALE_FACTOR * this->height() / SCALE_FACTOR;
+    short agents_count = all_agents.size();
+    short buf_size = 10000;
+
+    QVector<int> total_rewards(agents_count);
+
+    for (int i = 0; i < agents_count; i++)
+    {
+        total_rewards[i] = 0;
+    }
+
+    prepare_for_learning();
+    init_qlearn(state_size, agents_count, alpha_t, gamma_t, epsilon_t, buf_size);
+
+    for (int k = 0; k < episodes_count; k++)
+    {
+        reset_env();
+        reset_experience_buffer();
+
+        while (!all_done())
+        {
+            short *states = get_agents_states();
+            char *actions = new char[all_agents.size()];
+
+            choose_actions(states, actions);
+
+            signed char *rewards = set_actions_get_rewards(actions);
+            short *next_states = get_agents_states();
+            char *dones = get_agents_done_status();
+
+            for (int i = 0; i < agents_count; i++)
+            {
+                total_rewards[i] += rewards[i];
+            }
+
+            store_experience(states, actions, rewards, next_states, dones);
+            train();
+
+            delete[] states;
+            delete[] actions;
+            delete[] rewards;
+            delete[] next_states;
+            delete[] dones;
+        }
+
+        //qDebug() << "Episode " << k << " epsilon: " << epsilon;
+        //qDebug() << get_current_buf_size(0);
+        qDebug() << total_rewards[0];
+
+        for (int i = 0; i < agents_count; i++)
+        {
+            total_rewards[i] = 0;
+        }
+
+        // double **Q = get_q_table(0);
+        // if (Q)
+        // {
+        //     for (int s = 0; s < state_size; ++s)
+        //     {
+        //         QString row = QString("State %1: ").arg(s);
+        //         for (int a = 0; a < max_actions; ++a)
+        //         {
+        //             row += QString::number(Q[s][a]) + " ";
+        //         }
+        //         qDebug() << row;
+        //     }
+        // }
+
+        if (epsilon_t < 0.1)
+        {
+            epsilon_t = 0.1;
+        }
+        else
+        {
+            epsilon_t *= 0.99;
+        }
+
+
+        set_epsilon(epsilon_t);
+    }
+
+    reset_env();
+    free_qlearn();
+    qDebug() << "Done";
+}
+
+short *RL_scene::get_agents_states()
+{
+    int size = all_agents.size();
+    short *states = new short[size];
+    for (int i = 0; i < size; i++)
+    {
+        states[i] = all_agents[i]->get_current_state();
+    }
+
+    return states;
+}
+
+signed char *RL_scene::set_actions_get_rewards(char *actions)
+{
+    int size = all_agents.size();
+    signed char *rewards = new signed char[size];
+    for (int i = 0; i < size; i++)
+    {
+        switch (actions[i])
+        {
+        case AgentActions::MoveForward:
+            rewards[i] = execute_action(i, all_agents[i]->pos() + QPointF(0, -SCALE_FACTOR));
+            break;
+
+        case AgentActions::MoveBackwards:
+            rewards[i] = execute_action(i, all_agents[i]->pos() + QPointF(0, SCALE_FACTOR));
+            break;
+
+        case AgentActions::MoveToTheLeft:
+            rewards[i] = execute_action(i, all_agents[i]->pos() + QPointF(-SCALE_FACTOR, 0));
+            break;
+
+        case AgentActions::MoveToTheRight:
+            rewards[i] = execute_action(i, all_agents[i]->pos() + QPointF(SCALE_FACTOR, 0));
+            break;
+        }
+    }
+
+    return rewards;
+}
+
+bool RL_scene::is_new_point_inside_scene(QPointF new_point)
+{
+    int bottom_border = this->sceneRect().x() + this->sceneRect().height();
+    int upper_left_border = this->sceneRect().x();
+    int right_border = this->sceneRect().x() + this->sceneRect().width();
+
+    int new_x = new_point.x();
+    int new_y = new_point.y();
+
+    if (new_y >= bottom_border || new_x >= right_border || new_x < upper_left_border || new_y < upper_left_border)
+        return false;
+
+    return true;
+}
+
+signed char RL_scene::execute_action(int agent_id, QPointF new_pos)
+{
+    if (!is_new_point_inside_scene(new_pos))
+    {
+        return WALL_REWARD;
+    }
+
+    if (all_agents[agent_id]->is_done())
+        return 0;
+
+    CellItem *cell = dynamic_cast<CellItem*>(this->items(new_pos).first());
+
+    if (all_agents[agent_id]->get_goal()->pos() == new_pos)
+    {
+        all_agents[agent_id]->setPos(new_pos);
+        return GOAL_REWARD;
+    }
+    else if (cell)
+    {
+        switch (cell->get_type()) {
+        case CellType::Empty:
+        case CellType::Wall:
+            return WALL_REWARD;
+            break;
+        case CellType::Floor:
+            all_agents[agent_id]->setPos(new_pos);
+            return FLOOR_REWARD;
+            break;
+        }
+    }
+    else
+    {
+        return AGENT_COLLISION_REWARD;
+    }
+}
+
+char *RL_scene::get_agents_done_status()
+{
+    int size = all_agents.size();
+    char *dones = new char[size];
+    for (int i = 0; i < size; i++)
+    {
+        if (all_agents[i]->is_done())
+        {
+            dones[i] = 1;
+            continue;
+        }
+
+        if (all_agents[i]->pos() == all_agents[i]->get_goal()->pos())
+        {
+            all_agents[i]->set_done(true);
+            dones[i] = 1;
+        }
+        else
+        {
+            dones[i] = 0;
+        }
+    }
+
+    return dones;
+}
+
+void RL_scene::reset_env()
+{
+    for (auto agent : all_agents)
+    {
+        agent->reset_pos();
+        agent->set_done(false);
+    }
+
+    // Добавить сброс случайных препятствий
+
+    this->update();
+}
+
+void RL_scene::prepare_for_learning()
+{
+    for (auto agent : all_agents)
+    {
+        agent->save_start_point();
+    }
+
+    deselect_agents();
+    deselect_cells();
+
+    this->update();
 }
