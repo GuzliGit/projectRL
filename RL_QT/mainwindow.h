@@ -53,6 +53,10 @@ private slots:
 
     void on_DQN_choice_triggered();
 
+    void on_visualize_learning_triggered();
+
+    void display_learning_charts(QVector<QVector<int>> rewards);
+
 signals:
     void click_in_interactive_mode();
 
@@ -67,8 +71,7 @@ private:
     QDoubleSpinBox *alpha_spin;
     QDoubleSpinBox *gamma_spin;
     QDoubleSpinBox *start_epsilon_spin;
-    QChart *learning_chart;
-    QLineSeries *reward_series;
+    QTabWidget *charts_tab;
 
     QComboBox *algorithms;
     QString project_path = nullptr;

@@ -10,5 +10,7 @@
         <file>img/Agent.svg</file>
         <file>img/Goal.svg</file>
         <file>img/Execute.svg</file>
+        <file>img/OpenedEye.svg</file>
+        <file>img/ClosedEye.svg</file>
     </qresource>
 </RCC>

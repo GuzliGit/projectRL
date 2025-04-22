@@ -256,6 +256,18 @@
     <string>&amp;DQN</string>
    </property>
   </action>
+  <action name="visualize_learning">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/img/img/ClosedEye.svg</normaloff>:/img/img/ClosedEye.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Визуализировать</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
  </widget>
  <resources>
   <include location="resources.qrc"/>

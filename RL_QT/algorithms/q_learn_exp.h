@@ -3,6 +3,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define BUFFER_SIZE 10000
+
 typedef struct
 {
     short state;
@@ -15,7 +18,6 @@ typedef struct
 typedef struct
 {
     double **Q;
-    short max_buf_size;
     short current_buf_size;
     Exp_buffer *buf;
 } Q_Agent;
@@ -26,7 +28,7 @@ extern short state_size;
 extern char max_actions;
 extern Q_Agent *agents;
 
-void init_qlearn(short state_size, short agents_count, double alpha, double gamma, double epsilon, short buf_size);
+void init_qlearn(short state_size, short agents_count, double alpha, double gamma, double epsilon);
 
 void choose_actions(short *states, char *actions);
 
@@ -45,6 +47,8 @@ void set_epsilon(double new_val);
 double **get_q_table(short agent_id);
 
 short get_current_buf_size(short agent_id);
+
+char is_actions_limit(int agent_id);
 
 #ifdef __cplusplus
 }

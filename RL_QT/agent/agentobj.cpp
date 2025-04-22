@@ -15,6 +15,7 @@ AgentObj::AgentObj(QGraphicsItem *parent) :
     QPixmap pixmap(":/img/img/Agent.svg");
     width = pixmap.width();
     height = pixmap.height();
+    setZValue(1);
     //view_range = MIN_VIEW_RANGE;
 
     goal_pixmap = new QGraphicsPixmapItem;

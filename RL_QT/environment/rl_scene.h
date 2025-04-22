@@ -23,6 +23,7 @@ class RL_scene : public QGraphicsScene
     Q_OBJECT
 public:
     RL_scene(int width, int height, int scale_factor, QObject* parent = nullptr);
+    void clear_selection();
     void fill_with_empty_cells();
     void change_selected_cells(CellType type);
     void delete_selected_objs();
@@ -30,6 +31,8 @@ public:
     void set_agent_goal();
     void remove_agent_goal();
     bool is_in_interactive_mode();
+    bool is_visualize_status();
+    void set_visualize_status(bool val);
     void load_cell(CellItem* cell);
     void load_agent(AgentObj* agent);
     void update_appearance();
@@ -49,6 +52,7 @@ private slots:
 
 signals:
     void update_settings();
+    void learning_finished(QVector<QVector<int>> rewards);
 
 private:
     EnvironmentEditor *editor;
@@ -59,6 +63,7 @@ private:
     bool is_changing_agent_pos = false;
     bool is_left_button_pressed = false;
     bool is_goal_selection = false;
+    bool is_visualize_mod = false;
 
     QPointF selection_start;
     bool ctrl_pressed = false;
@@ -72,12 +77,13 @@ private:
     void update_all_cells();
     void deselect_cells();
     void deselect_agents();
-    bool is_cells_connected();
-    short *get_agents_states();
-    signed char *set_actions_get_rewards(char *actions);
+    bool is_cells_connected(QList<QPointF>& blocked_targets);
+    bool is_all_goals_reachable();
+    void get_agents_states(short *states);
+    void set_actions_get_rewards(char *actions, signed char *rewards);
     bool is_new_point_inside_scene(QPointF new_point);
     signed char execute_action(int agent_id, QPointF new_pos);
-    char *get_agents_done_status();
+    void get_agents_done_status(char *dones);
     void reset_env();
     void prepare_for_learning();
 };

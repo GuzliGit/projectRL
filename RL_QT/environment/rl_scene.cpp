@@ -27,6 +27,12 @@ RL_scene::RL_scene(int width, int height, int scale_factor, QObject* parent) :
     }
 }
 
+void RL_scene::clear_selection()
+{
+    deselect_agents();
+    deselect_cells();
+}
+
 void RL_scene::fill_with_empty_cells()
 {
     CellItem *temp = new CellItem();
@@ -158,6 +164,16 @@ bool RL_scene::is_in_interactive_mode()
     return is_goal_selection;
 }
 
+bool RL_scene::is_visualize_status()
+{
+    return is_visualize_mod;
+}
+
+void RL_scene::set_visualize_status(bool val)
+{
+    is_visualize_mod = val;
+}
+
 void RL_scene::load_cell(CellItem *cell)
 {
     for (auto item : all_cells)
@@ -198,7 +214,10 @@ bool RL_scene::is_correct_environment()
             return false;
     }
 
-    if (!is_cells_connected())
+    QList<QPointF> blocked;
+    blocked.append(QPointF(-100, -100));
+
+    if (!is_cells_connected(blocked) || !is_all_goals_reachable())
         return false;
 
     return true;
@@ -581,14 +600,15 @@ void RL_scene::deselect_agents()
     selected_agents.clear();
 }
 
-bool RL_scene::is_cells_connected()
+bool RL_scene::is_cells_connected(QList<QPointF>& blocked_targets)
 {
     CellItem *temp = new CellItem;
     int width_scale = temp->get_width();
     int height_scale = temp->get_height();
+    delete temp;
+
     int rows = this->width() / width_scale;
     int cols = this->height() / height_scale;
-    bool is_free_cells = false;
 
     QPointF search_start = all_agents.first()->pos();
 
@@ -597,10 +617,12 @@ bool RL_scene::is_cells_connected()
     q.push(search_start);
     visited[search_start.x() / width_scale][search_start.y() / height_scale] = true;
 
-    const std::vector<QPointF> directions = { QPointF(-width_scale, 0),
-                                             QPointF(width_scale, 0),
-                                             QPointF(0, height_scale),
-                                             QPointF(0, -height_scale)};
+    const std::vector<QPointF> directions = {
+        QPointF(-width_scale, 0),
+        QPointF(width_scale, 0),
+        QPointF(0, height_scale),
+        QPointF(0, -height_scale)
+    };
 
     while (!q.empty())
     {
@@ -612,17 +634,29 @@ bool RL_scene::is_cells_connected()
             int nx = point.x() + next.x();
             int ny = point.y() + next.y();
 
-            if (nx >= 0 && nx / width_scale < rows && ny >= 0 && ny / height_scale < cols)
+            if (nx >= 0 && ny >= 0 && nx / width_scale < rows && ny / height_scale < cols)
             {
-                if (!visited[nx / width_scale][ny / height_scale])
+                int i = nx / width_scale;
+                int j = ny / height_scale;
+
+                if (!visited[i][j])
                 {
-                    CellItem *cell = dynamic_cast<CellItem*>(this->items(QPointF(nx, ny)).first());
-                    AgentObj *agent = dynamic_cast<AgentObj*>(this->items(QPointF(nx, ny)).first());
+                    QList<QGraphicsItem*> items_here = this->items(QPointF(nx, ny));
+                    CellItem *cell = nullptr;
+                    AgentObj *agent = nullptr;
+
+                    for (auto *item : items_here)
+                    {
+                        if (!cell) cell = dynamic_cast<CellItem*>(item);
+                        if (!agent) agent = dynamic_cast<AgentObj*>(item);
+                    }
+
+                    if (blocked_targets.contains(QPointF(nx, ny)))
+                        continue;
 
                     if ((cell && cell->is_walkable()) || agent)
                     {
-                        is_free_cells = cell ? true : is_free_cells;
-                        visited[nx / width_scale][ny / height_scale] = true;
+                        visited[i][j] = true;
                         q.push(QPointF(nx, ny));
                     }
                 }
@@ -634,14 +668,50 @@ bool RL_scene::is_cells_connected()
     {
         for (int j = 0; j < cols; j++)
         {
-            CellItem *cell = dynamic_cast<CellItem*>(this->items(QPointF(i * width_scale, j * height_scale)).first());
-            AgentObj *agent = dynamic_cast<AgentObj*>(this->items(QPointF(i * width_scale, j * height_scale)).first());
+            QPointF pos(i * width_scale, j * height_scale);
+            QList<QGraphicsItem*> items_here = this->items(pos);
+            CellItem *cell = nullptr;
+            AgentObj *agent = nullptr;
 
-            if ((cell && cell->is_walkable() && !visited[i][j]) || (agent && !visited[i][j]))
+            for (auto *item : items_here)
+            {
+                if (!cell)
+                    cell = dynamic_cast<CellItem*>(item);
+
+                if (!agent)
+                    agent = dynamic_cast<AgentObj*>(item);
+            }
+
+            if ((cell && cell->is_walkable() && !visited[i][j] && !blocked_targets.contains(pos)) || (agent && !visited[i][j]))
             {
                 return false;
             }
         }
+    }
+
+    return true;
+}
+
+bool RL_scene::is_all_goals_reachable()
+{
+    QList<QPointF> targets;
+
+    for (auto agent : all_agents)
+    {
+        targets.append(agent->get_goal()->pos());
+    }
+
+    for (int i = 0; i < targets.size(); i++)
+    {
+        QList<QPointF> blocked;
+        for (int j = 0; j < targets.size(); j++)
+        {
+            if (i != j)
+                blocked.append(targets[j]);
+        }
+
+        if (!is_cells_connected(blocked))
+            return false;
     }
 
     return true;
@@ -652,19 +722,28 @@ void RL_scene::start_qlearn(double alpha_t, double gamma_t, double epsilon_t, in
     deselect_agents();
     deselect_cells();
 
-    short state_size = this->width() / SCALE_FACTOR * this->height() / SCALE_FACTOR;
-    short agents_count = all_agents.size();
-    short buf_size = 10000;
+    const short state_size = this->width() / SCALE_FACTOR * this->height() / SCALE_FACTOR;
+    const short agents_count = all_agents.size();
 
-    QVector<int> total_rewards(agents_count);
+    QVector<QVector<int>> total_rewards(agents_count);
 
     for (int i = 0; i < agents_count; i++)
     {
-        total_rewards[i] = 0;
+        total_rewards[i] = QVector<int>(episodes_count);
+        for (int j = 0; j < episodes_count; j++)
+        {
+            total_rewards[i][j] = 0;
+        }
     }
 
     prepare_for_learning();
-    init_qlearn(state_size, agents_count, alpha_t, gamma_t, epsilon_t, buf_size);
+    init_qlearn(state_size, agents_count, alpha_t, gamma_t, epsilon_t);
+
+    short states[agents_count];
+    char actions[agents_count];
+    short next_states[agents_count];
+    signed char rewards[agents_count];
+    char dones[agents_count];
 
     for (int k = 0; k < episodes_count; k++)
     {
@@ -673,38 +752,23 @@ void RL_scene::start_qlearn(double alpha_t, double gamma_t, double epsilon_t, in
 
         while (!all_done())
         {
-            short *states = get_agents_states();
-            char *actions = new char[all_agents.size()];
-
+            get_agents_states(states);
             choose_actions(states, actions);
-
-            signed char *rewards = set_actions_get_rewards(actions);
-            short *next_states = get_agents_states();
-            char *dones = get_agents_done_status();
+            set_actions_get_rewards(actions, rewards);
+            get_agents_states(next_states);
+            get_agents_done_status(dones);
 
             for (int i = 0; i < agents_count; i++)
             {
-                total_rewards[i] += rewards[i];
+                total_rewards[i][k] += rewards[i];
             }
 
             store_experience(states, actions, rewards, next_states, dones);
             train();
-
-            delete[] states;
-            delete[] actions;
-            delete[] rewards;
-            delete[] next_states;
-            delete[] dones;
         }
 
         //qDebug() << "Episode " << k << " epsilon: " << epsilon;
         //qDebug() << get_current_buf_size(0);
-        qDebug() << total_rewards[0];
-
-        for (int i = 0; i < agents_count; i++)
-        {
-            total_rewards[i] = 0;
-        }
 
         // double **Q = get_q_table(0);
         // if (Q)
@@ -735,25 +799,24 @@ void RL_scene::start_qlearn(double alpha_t, double gamma_t, double epsilon_t, in
 
     reset_env();
     free_qlearn();
+
+    emit learning_finished(total_rewards);
+
     qDebug() << "Done";
 }
 
-short *RL_scene::get_agents_states()
+void RL_scene::get_agents_states(short *states)
 {
     int size = all_agents.size();
-    short *states = new short[size];
     for (int i = 0; i < size; i++)
     {
         states[i] = all_agents[i]->get_current_state();
     }
-
-    return states;
 }
 
-signed char *RL_scene::set_actions_get_rewards(char *actions)
+void RL_scene::set_actions_get_rewards(char *actions, signed char *rewards)
 {
     int size = all_agents.size();
-    signed char *rewards = new signed char[size];
     for (int i = 0; i < size; i++)
     {
         switch (actions[i])
@@ -775,8 +838,6 @@ signed char *RL_scene::set_actions_get_rewards(char *actions)
             break;
         }
     }
-
-    return rewards;
 }
 
 bool RL_scene::is_new_point_inside_scene(QPointF new_point)
@@ -830,10 +891,9 @@ signed char RL_scene::execute_action(int agent_id, QPointF new_pos)
     }
 }
 
-char *RL_scene::get_agents_done_status()
+void RL_scene::get_agents_done_status(char *dones)
 {
     int size = all_agents.size();
-    char *dones = new char[size];
     for (int i = 0; i < size; i++)
     {
         if (all_agents[i]->is_done())
@@ -852,8 +912,6 @@ char *RL_scene::get_agents_done_status()
             dones[i] = 0;
         }
     }
-
-    return dones;
 }
 
 void RL_scene::reset_env()

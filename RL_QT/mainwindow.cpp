@@ -44,6 +44,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(scene, &RL_scene::selectionChanged, this, &MainWindow::onScene_selection_changed);
     connect(scene, &RL_scene::update_settings, this, &MainWindow::onScene_selection_changed);
+    connect(scene, &RL_scene::learning_finished, this, &MainWindow::display_learning_charts);
 }
 
 MainWindow::~MainWindow()
@@ -397,7 +398,7 @@ void MainWindow::setup_q_learn_panel()
 
     start_epsilon_spin = new QDoubleSpinBox();
     start_epsilon_spin->setWrapping(true);
-    start_epsilon_spin->setRange(0.05, 1.0);
+    start_epsilon_spin->setRange(0.1, 1.0);
     start_epsilon_spin->setSingleStep(0.05);
     start_epsilon_spin->setValue(1.0);
     start_epsilon_spin->setAlignment(Qt::AlignCenter);
@@ -407,15 +408,10 @@ void MainWindow::setup_q_learn_panel()
     parameters_area->setWidgetResizable(true);
 
     // Правая панель
-    learning_chart = new QChart();
-    reward_series = new QLineSeries();
-    learning_chart->addSeries(reward_series);
-    learning_chart->createDefaultAxes();
-    QChartView *chart_view = new QChartView();
-    chart_view->setRenderHint(QPainter::Antialiasing);
+    charts_tab = new QTabWidget();
 
     learning_layout->addWidget(parameters_area, 1);
-    learning_layout->addWidget(chart_view, 3);
+    learning_layout->addWidget(charts_tab, 3);
 
     ui->learning_panel->setWidget(learning_container);
     ui->learning_panel->setWidgetResizable(true);
@@ -497,10 +493,16 @@ void MainWindow::load_scene(QString &path)
     in >> width;
     in >> height;
 
+    scene->clear_selection();
+    charts_tab->clear();
+    if (scene->is_visualize_status())
+        on_visualize_learning_triggered();
+
     scene = new RL_scene(0, 0, SCALE_FACTOR, this);
 
     connect(scene, &RL_scene::selectionChanged, this, &MainWindow::onScene_selection_changed);
     connect(scene, &RL_scene::update_settings, this, &MainWindow::onScene_selection_changed);
+    connect(scene, &RL_scene::learning_finished, this, &MainWindow::display_learning_charts);
 
     scene->setSceneRect(0, 0, width, height);
     ui->environment->setScene(scene);
@@ -595,11 +597,17 @@ void MainWindow::on_create_proj_triggered()
 
             if (reply == QMessageBox::Yes)
             {
+                scene->clear_selection();
+                charts_tab->clear();
+                if (scene->is_visualize_status())
+                    on_visualize_learning_triggered();
+
                 on_save_proj_triggered();
                 scene = new RL_scene(0, 0, SCALE_FACTOR, this);
 
                 connect(scene, &RL_scene::selectionChanged, this, &MainWindow::onScene_selection_changed);
                 connect(scene, &RL_scene::update_settings, this, &MainWindow::onScene_selection_changed);
+                connect(scene, &RL_scene::learning_finished, this, &MainWindow::display_learning_charts);
 
                 scene->setSceneRect(0, 0, w.get_width() * SCALE_FACTOR, w.get_height() * SCALE_FACTOR);
                 ui->environment->setScene(scene);
@@ -789,7 +797,7 @@ void MainWindow::on_start_learning_triggered()
 {
     if (!scene->is_correct_environment())
     {
-        QMessageBox::warning(this, "Ошибка", "Проверьте построенную среду! (должен быть как минимум 1 агент; все клетки, кроме пустых, должны быть достижимы)");
+        QMessageBox::warning(this, "Ошибка", "Проверьте построенную среду! (должен быть как минимум 1 агент; все клетки, кроме пустых, должны быть достижимы; целевые клетки не должны перекрывать друг друга)");
         return;
     }
 
@@ -848,6 +856,7 @@ void MainWindow::setup_toolbar()
     ui->tool_bar->addAction(ui->center_navigation);
     ui->tool_bar->addAction(ui->start_learning);
     ui->tool_bar->addWidget(algorithms);
+    ui->tool_bar->addAction(ui->visualize_learning);
     ui->tool_bar->addAction(ui->delete_obj);
 
     connect(algorithms, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
@@ -881,5 +890,51 @@ void MainWindow::setup_toolbar()
             algorithms->setCurrentIndex(1);
         }
     });
+}
+
+
+void MainWindow::on_visualize_learning_triggered()
+{
+    if (scene->width() == 0)
+        return;
+
+    if (scene->is_visualize_status())
+    {
+        ui->visualize_learning->setIcon(QIcon(":/img/img/ClosedEye.svg"));
+        scene->set_visualize_status(false);
+    }
+    else
+    {
+        ui->visualize_learning->setIcon(QIcon(":/img/img/OpenedEye.svg"));
+        scene->set_visualize_status(true);
+    }
+}
+
+void MainWindow::display_learning_charts(QVector<QVector<int> > rewards)
+{
+    charts_tab->clear();
+
+    for (int i = 0; i < rewards.size(); ++i)
+    {
+        QVector<int> agent_rewards = rewards[i];
+
+        QLineSeries *series = new QLineSeries();
+        for (int j = 0; j < agent_rewards.size(); ++j)
+        {
+            series->append(j, agent_rewards[j]);
+        }
+
+        QChart *chart = new QChart();
+        chart->addSeries(series);
+        chart->setTitle(QString("Агент %1: Награда по эпизодам").arg(i + 1));
+        chart->createDefaultAxes();
+        chart->axes(Qt::Vertical).first()->setTitleText("Награда");
+        chart->axes(Qt::Horizontal).first()->setTitleText("Эпизод");
+
+        QChartView *chart_view = new QChartView(chart);
+        chart_view->setRenderHint(QPainter::Antialiasing);
+
+        charts_tab->addTab(chart_view, QString("Агент %1").arg(i + 1));
+    }
 }
 
