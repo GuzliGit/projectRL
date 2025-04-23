@@ -12,5 +12,30 @@
         <file>img/Execute.svg</file>
         <file>img/OpenedEye.svg</file>
         <file>img/ClosedEye.svg</file>
+        <file>img/Stop.svg</file>
+        <file>img/ArrowUp.svg</file>
+        <file>img/ArrowDown.svg</file>
+    </qresource>
+    <qresource prefix="/font">
+        <file>fonts/RobotoCondensed-Regular.ttf</file>
+        <file>fonts/RobotoCondensed-MediumItalic.ttf</file>
+        <file>fonts/RobotoCondensed-Medium.ttf</file>
+        <file>fonts/RobotoCondensed-LightItalic.ttf</file>
+        <file>fonts/RobotoCondensed-Light.ttf</file>
+        <file>fonts/RobotoCondensed-Italic.ttf</file>
+        <file>fonts/RobotoCondensed-BoldItalic.ttf</file>
+        <file>fonts/RobotoCondensed-Bold.ttf</file>
+        <file>fonts/Roboto-ThinItalic.ttf</file>
+        <file>fonts/Roboto-Thin.ttf</file>
+        <file>fonts/Roboto-Regular.ttf</file>
+        <file>fonts/Roboto-MediumItalic.ttf</file>
+        <file>fonts/Roboto-Medium.ttf</file>
+        <file>fonts/Roboto-LightItalic.ttf</file>
+        <file>fonts/Roboto-Light.ttf</file>
+        <file>fonts/Roboto-Italic.ttf</file>
+        <file>fonts/Roboto-BoldItalic.ttf</file>
+        <file>fonts/Roboto-Bold.ttf</file>
+        <file>fonts/Roboto-BlackItalic.ttf</file>
+        <file>fonts/Roboto-Black.ttf</file>
     </qresource>
 </RCC>

@@ -5,8 +5,9 @@
 double alpha_p, gamma_p, epsilon_p;
 short agents_count;
 short state_size;
-char max_actions = 4;
+short max_actions = 4;
 Q_Agent *agents = NULL;
+Exp_buffer *shared_buffer = NULL;
 
 void init_qlearn(short state_size_t, short agents_count_t, double alpha_t, double gamma_t, double epsilon_t)
 {
@@ -18,6 +19,7 @@ void init_qlearn(short state_size_t, short agents_count_t, double alpha_t, doubl
     epsilon_p = epsilon_t;
     agents_count = agents_count_t;
 
+    shared_buffer = malloc(BUFFER_SIZE * agents_count * sizeof(Exp_buffer));
     agents = malloc(agents_count * sizeof(Q_Agent));
     for (int i = 0; i < agents_count; i++)
     {
@@ -28,7 +30,7 @@ void init_qlearn(short state_size_t, short agents_count_t, double alpha_t, doubl
         }
 
         agents[i].current_buf_size = 0;
-        agents[i].buf = malloc(BUFFER_SIZE * sizeof(Exp_buffer));
+        agents[i].buf = shared_buffer + BUFFER_SIZE * i;
     }
 }
 
@@ -108,9 +110,9 @@ void free_qlearn() {
         }
 
         free(agents[i].Q);
-        free(agents[i].buf);
     }
 
+    free(shared_buffer);
     free(agents);
 }
 

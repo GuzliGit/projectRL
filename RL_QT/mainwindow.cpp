@@ -23,6 +23,7 @@
 #include <QFileDialog>
 #include <QComboBox>
 #include <QFormLayout>
+#include <QtConcurrent/QtConcurrent>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -39,16 +40,22 @@ MainWindow::MainWindow(QWidget *parent)
     algorithms->setCurrentIndex(0);
     setup_q_learn_panel();
 
+    training_thread = new QThread(this);
+
     QSettings settings("badin_AP-126", "RL_studio");
     restoreState(settings.value("window_state").toByteArray());
 
     connect(scene, &RL_scene::selectionChanged, this, &MainWindow::onScene_selection_changed);
     connect(scene, &RL_scene::update_settings, this, &MainWindow::onScene_selection_changed);
     connect(scene, &RL_scene::learning_finished, this, &MainWindow::display_learning_charts);
+    connect(scene, &RL_scene::update_logs, this, &MainWindow::display_all_learning_logs);
 }
 
 MainWindow::~MainWindow()
 {
+    training_thread->quit();
+    training_thread->wait();
+
     delete scene;
     delete ui;
 }
@@ -188,6 +195,7 @@ void MainWindow::setup_editor_panel_widgets()
     tabs->addTab(agent_scroll_area, "Агенты");
 
     QWidget *editor_container = new QWidget;
+    editor_container->setObjectName("editor_container");
     QVBoxLayout *editor_layout = new QVBoxLayout(editor_container);
     editor_layout->addWidget(tabs);
 
@@ -198,6 +206,7 @@ void MainWindow::setup_editor_panel_widgets()
 void MainWindow::setup_settings_panel_widgets()
 {
     QWidget *settings_container = new QWidget;
+    settings_container->setObjectName("settings_container");
     QVBoxLayout *settings_layout = new QVBoxLayout;
     settings_container->setLayout(settings_layout);
 
@@ -226,6 +235,7 @@ void MainWindow::clear_layout(QLayout *layout)
 void MainWindow::setup_agent_settings(AgentObj* agent)
 {
     QWidget *settings_container = new QWidget;
+    settings_container->setObjectName("settings_container");
     QVBoxLayout *settings_layout = new QVBoxLayout;
     settings_container->setLayout(settings_layout);
 
@@ -275,23 +285,6 @@ void MainWindow::setup_agent_settings(AgentObj* agent)
         image_container->setIcon(QIcon(":/img/img/Agent.svg"));
         agent_description->setText("Агент, который ориентируется в пространстве, зная "
                                    "о расположении клеток заранее.");
-
-        // QLabel *view_range = new QLabel;
-        // view_range->setAlignment(Qt::AlignCenter);
-        // view_range->setWordWrap(true);
-        // view_range->setText("Диапозон обзора (в клетках):");
-        // settings_layout->addWidget(view_range);
-
-        // QSpinBox *view_range_spin = new QSpinBox;
-        // view_range_spin->setWrapping(true);
-        // view_range_spin->setRange(1, BLOCK_LIMIT);
-        // view_range_spin->setValue(agent->get_view_range());
-        // view_range_spin->setAlignment(Qt::AlignCenter);
-
-        // connect(view_range_spin, QOverload<int>::of(&QSpinBox::valueChanged), this, [agent](int value){
-        //     agent->set_view_range(value * SCALE_FACTOR);
-        // });
-        // settings_layout->addWidget(view_range_spin);
         break;
     }
 
@@ -302,6 +295,7 @@ void MainWindow::setup_agent_settings(AgentObj* agent)
 void MainWindow::setup_cell_settings(CellItem* cell)
 {
     QWidget *settings_container = new QWidget;
+    settings_container->setObjectName("settings_container");
     QVBoxLayout *settings_layout = new QVBoxLayout;
     settings_container->setLayout(settings_layout);
 
@@ -355,6 +349,7 @@ void MainWindow::setup_cell_settings(CellItem* cell)
 void MainWindow::setup_learning_panel_widgets()
 {
     QWidget *learning_container = new QWidget;
+    learning_container->setObjectName("learning_container");
     QHBoxLayout *learning_layout = new QHBoxLayout;
     learning_container->setLayout(learning_layout);
 
@@ -365,20 +360,33 @@ void MainWindow::setup_learning_panel_widgets()
 void MainWindow::setup_q_learn_panel()
 {
     QWidget *learning_container = new QWidget;
+    learning_container->setObjectName("learning_container");
     QHBoxLayout *learning_layout = new QHBoxLayout;
     learning_container->setLayout(learning_layout);
 
     // Левая панель
     QScrollArea *parameters_area = new QScrollArea();
     QWidget *parameters_widget = new QWidget();
-    QFormLayout *form_layout = new QFormLayout(parameters_widget);
+    QVBoxLayout *form_layout = new QVBoxLayout(parameters_widget);
+
+    QLabel *episodes_label = new QLabel;
+    episodes_label->setAlignment(Qt::AlignCenter);
+    episodes_label->setWordWrap(true);
+    episodes_label->setText("Эпизоды:");
+    form_layout->addWidget(episodes_label);
 
     episode_spin = new QSpinBox();
     episode_spin->setWrapping(true);
     episode_spin->setRange(1, MAX_EPISODES);
     episode_spin->setValue(100);
     episode_spin->setAlignment(Qt::AlignCenter);
-    form_layout->addRow("Эпизоды:", episode_spin);
+    form_layout->addWidget(episode_spin);
+
+    QLabel *alpha_label = new QLabel;
+    alpha_label->setAlignment(Qt::AlignCenter);
+    alpha_label->setWordWrap(true);
+    alpha_label->setText("Альфа:");
+    form_layout->addWidget(alpha_label);
 
     alpha_spin = new QDoubleSpinBox();
     alpha_spin->setWrapping(true);
@@ -386,7 +394,13 @@ void MainWindow::setup_q_learn_panel()
     alpha_spin->setSingleStep(0.05);
     alpha_spin->setValue(0.3);
     alpha_spin->setAlignment(Qt::AlignCenter);
-    form_layout->addRow("Альфа:", alpha_spin);
+    form_layout->addWidget(alpha_spin);
+
+    QLabel *gamma_label = new QLabel;
+    gamma_label->setAlignment(Qt::AlignCenter);
+    gamma_label->setWordWrap(true);
+    gamma_label->setText("Гамма:");
+    form_layout->addWidget(gamma_label);
 
     gamma_spin = new QDoubleSpinBox();
     gamma_spin->setWrapping(true);
@@ -394,7 +408,13 @@ void MainWindow::setup_q_learn_panel()
     gamma_spin->setSingleStep(0.05);
     gamma_spin->setValue(0.9);
     gamma_spin->setAlignment(Qt::AlignCenter);
-    form_layout->addRow("Гамма:", gamma_spin);
+    form_layout->addWidget(gamma_spin);
+
+    QLabel *start_eps_label = new QLabel;
+    start_eps_label->setAlignment(Qt::AlignCenter);
+    start_eps_label->setWordWrap(true);
+    start_eps_label->setText("Начальный эпсилон:");
+    form_layout->addWidget(start_eps_label);
 
     start_epsilon_spin = new QDoubleSpinBox();
     start_epsilon_spin->setWrapping(true);
@@ -402,7 +422,7 @@ void MainWindow::setup_q_learn_panel()
     start_epsilon_spin->setSingleStep(0.05);
     start_epsilon_spin->setValue(1.0);
     start_epsilon_spin->setAlignment(Qt::AlignCenter);
-    form_layout->addRow("Нач. эпсилон:", start_epsilon_spin);
+    form_layout->addWidget(start_epsilon_spin);
 
     parameters_area->setWidget(parameters_widget);
     parameters_area->setWidgetResizable(true);
@@ -503,6 +523,7 @@ void MainWindow::load_scene(QString &path)
     connect(scene, &RL_scene::selectionChanged, this, &MainWindow::onScene_selection_changed);
     connect(scene, &RL_scene::update_settings, this, &MainWindow::onScene_selection_changed);
     connect(scene, &RL_scene::learning_finished, this, &MainWindow::display_learning_charts);
+    connect(scene, &RL_scene::update_logs, this, &MainWindow::display_all_learning_logs);
 
     scene->setSceneRect(0, 0, width, height);
     ui->environment->setScene(scene);
@@ -584,6 +605,27 @@ void MainWindow::load_scene(QString &path)
     file.close();
 }
 
+void MainWindow::set_ui_enabled(bool val)
+{
+    ui->rl_settings_panel->setEnabled(val);
+    ui->editor_panel->setEnabled(val);
+    ui->create_proj->setEnabled(val);
+    ui->save_proj->setEnabled(val);
+    ui->save_as_proj->setEnabled(val);
+    ui->open_proj->setEnabled(val);
+
+    ui->center_navigation->setEnabled(val);
+    ui->start_learning->setEnabled(val);
+    ui->Q_learn_choice->setEnabled(val);
+    ui->DQN_choice->setEnabled(val);
+    ui->visualize_learning->setEnabled(val);
+    ui->delete_obj->setEnabled(val);
+
+    ui->stop_learning->setEnabled(!val);
+
+    algorithms->setEnabled(val);
+}
+
 void MainWindow::on_create_proj_triggered()
 {
     CreateProj_Dialog w(BLOCK_LIMIT, this);
@@ -608,6 +650,7 @@ void MainWindow::on_create_proj_triggered()
                 connect(scene, &RL_scene::selectionChanged, this, &MainWindow::onScene_selection_changed);
                 connect(scene, &RL_scene::update_settings, this, &MainWindow::onScene_selection_changed);
                 connect(scene, &RL_scene::learning_finished, this, &MainWindow::display_learning_charts);
+                connect(scene, &RL_scene::update_logs, this, &MainWindow::display_all_learning_logs);
 
                 scene->setSceneRect(0, 0, w.get_width() * SCALE_FACTOR, w.get_height() * SCALE_FACTOR);
                 ui->environment->setScene(scene);
@@ -805,12 +848,36 @@ void MainWindow::on_start_learning_triggered()
     switch (algorithm) {
     case TrainAlgorithms::QLearn:
     {
-        double alpha = alpha_spin->value();
-        double gamma = gamma_spin->value();
-        double epsilon = start_epsilon_spin->value();
-        int episodes = episode_spin->value();
+        if (scene->is_visualize_status())
+        { 
+            trainer = new QLearningTrainer(scene);            
 
-        scene->start_qlearn(alpha, gamma, epsilon, episodes);
+            scene->set_training(true);
+            set_ui_enabled(false);
+
+            trainer->moveToThread(training_thread);
+
+            connect(this, &MainWindow::cancel_requested, trainer, &QLearningTrainer::cancel_training, Qt::DirectConnection);
+            connect(trainer, &QLearningTrainer::update_logs, this, &MainWindow::display_learning_logs_by_step);
+            connect(trainer, &QLearningTrainer::training_finished, this, &MainWindow::display_learning_charts);
+            connect(trainer, &QLearningTrainer::scene_disabled, scene, &RL_scene::set_training);
+
+            training_thread->start();
+
+            QMetaObject::invokeMethod(trainer, "start_training",
+                                      Q_ARG(double, alpha_spin->value()),
+                                      Q_ARG(double, gamma_spin->value()),
+                                      Q_ARG(double, start_epsilon_spin->value()),
+                                      Q_ARG(int, episode_spin->value()));
+        }
+        else
+        {
+            ui->log_panel->clear();
+            ui->log_panel->appendPlainText(QString("Начало обучения: [%1]").arg(QDateTime::currentDateTime().toString()));
+
+            scene->start_qlearn(alpha_spin->value(), gamma_spin->value(), start_epsilon_spin->value(), episode_spin->value());
+        }
+
         break;
     }
     default:
@@ -856,8 +923,11 @@ void MainWindow::setup_toolbar()
     ui->tool_bar->addAction(ui->center_navigation);
     ui->tool_bar->addAction(ui->start_learning);
     ui->tool_bar->addWidget(algorithms);
+    ui->tool_bar->addAction(ui->stop_learning);
     ui->tool_bar->addAction(ui->visualize_learning);
     ui->tool_bar->addAction(ui->delete_obj);
+
+    ui->stop_learning->setEnabled(false);
 
     connect(algorithms, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
         if (index == 0)
@@ -910,8 +980,10 @@ void MainWindow::on_visualize_learning_triggered()
     }
 }
 
-void MainWindow::display_learning_charts(QVector<QVector<int> > rewards)
+void MainWindow::display_learning_charts(QVector<QVector<int> > rewards, QPointF *coords)
 {
+    set_ui_enabled(true);
+    ui->log_panel->appendPlainText(QString("Конец обучения: [%1]").arg(QDateTime::currentDateTime().toString()));
     charts_tab->clear();
 
     for (int i = 0; i < rewards.size(); ++i)
@@ -926,7 +998,7 @@ void MainWindow::display_learning_charts(QVector<QVector<int> > rewards)
 
         QChart *chart = new QChart();
         chart->addSeries(series);
-        chart->setTitle(QString("Агент %1: Награда по эпизодам").arg(i + 1));
+        chart->setTitle(QString("Агент %1 {%2, %3}: Награда по эпизодам").arg(i + 1).arg(coords[i].x() + 1).arg(coords[i].y() + 1));
         chart->createDefaultAxes();
         chart->axes(Qt::Vertical).first()->setTitleText("Награда");
         chart->axes(Qt::Horizontal).first()->setTitleText("Эпизод");
@@ -936,5 +1008,38 @@ void MainWindow::display_learning_charts(QVector<QVector<int> > rewards)
 
         charts_tab->addTab(chart_view, QString("Агент %1").arg(i + 1));
     }
+}
+
+void MainWindow::display_learning_logs_by_step(QVector<int> rewards, int episode_num)
+{
+    if (episode_num == 0)
+    {
+        ui->log_panel->clear();
+        ui->log_panel->appendPlainText(QString("Начало обучения: [%1]").arg(QDateTime::currentDateTime().toString()));
+    }
+
+    for (int i = 0; i < rewards.size(); i++)
+    {
+        ui->log_panel->appendPlainText(QString("Агент %1 | Эпизод %2: %3").arg(i + 1).arg(episode_num + 1).arg(rewards[i]));
+    }
+}
+
+void MainWindow::display_all_learning_logs(QVector<QVector<int> > rewards)
+{
+    for (int i = 0; i < rewards.size(); i++)
+    {
+        for (int j = 0; j < rewards[i].size(); j++)
+        {
+            ui->log_panel->appendPlainText(QString("Агент %1 | Эпизод %2: %3").arg(j + 1).arg(i + 1).arg(rewards[i][j]));
+        }
+    }
+}
+
+
+void MainWindow::on_stop_learning_triggered()
+{
+    ui->log_panel->appendPlainText(QString("Преждевременная остановка процесса обучения [%1]").arg(QDateTime::currentDateTime().toString()));
+    ui->stop_learning->setEnabled(false);
+    emit cancel_requested();
 }
 

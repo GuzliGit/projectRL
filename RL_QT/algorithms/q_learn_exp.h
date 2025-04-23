@@ -25,7 +25,7 @@ typedef struct
 extern double alpha_p, gamma_p, epsilon_p;
 extern short agents_count;
 extern short state_size;
-extern char max_actions;
+extern short max_actions;
 extern Q_Agent *agents;
 
 void init_qlearn(short state_size, short agents_count, double alpha, double gamma, double epsilon);

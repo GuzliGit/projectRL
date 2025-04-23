@@ -23,6 +23,7 @@ SOURCES += \
     environment/wallcell.cpp \
     main.cpp \
     mainwindow.cpp \
+    trainers/qlearningtrainer.cpp
 
 HEADERS += \
     agent/agentfactory.h \
@@ -38,6 +39,7 @@ HEADERS += \
     environment/rl_scene.h \
     environment/wallcell.h \
     mainwindow.h \
+    trainers/qlearningtrainer.h
 
 FORMS += \
     createproj_dialog.ui \

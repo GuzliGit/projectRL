@@ -10,6 +10,8 @@ int main(int argc, char *argv[])
     }
 #endif
     QApplication a(argc, argv);
+    QFontDatabase::addApplicationFont(":/font/fonts/Roboto-Regular.ttf");
+
     MainWindow w;
     w.show();
     return a.exec();

@@ -20,7 +20,240 @@
    <string>RL studio</string>
   </property>
   <property name="styleSheet">
-   <string notr="true"/>
+   <string notr="true">/*Стиль для основы*/
+QWidget {
+    color: #E0E0E0;
+	font-family: &quot;Roboto&quot;;
+    font-size: 12px;
+}
+
+QWidget#editor_container, QWidget#settings_container, QWidget#learning_container {
+    background: #2A2A2A; 
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+QMainWindow{
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #1e1e1e, stop:1 #2a2a2a);
+}
+
+/*Стиль для доков*/
+QDockWidget {
+    background: #383838;
+    border: 1px solid #454545;
+    /*titlebar-close-icon: url(:/img/img/Stop.svg);
+    titlebar-normal-icon: url(:/icons/dock.svg);*/
+    margin: 2px;
+}
+
+QDockWidget::title {
+    background: #393939;
+    padding: 6px;
+    border-top: 2px solid #4285f4;
+    border-radius: 4px 4px 0 0;
+}
+
+QDockWidget::close-button, QDockWidget::float-button {
+    background: transparent;
+    padding: 4px;
+}
+
+QDockWidget::close-button:hover, QDockWidget::float-button:hover {
+    background: #525252;
+}
+
+/* Стили для кнопок*/
+QPushButton {
+    background: #323232;
+    border: 1px solid #454545;
+    border-radius: 4px;
+    padding: 6px 12px;
+}
+
+QPushButton:hover {
+    background: #424242;
+    border-color: #4285f4;
+}
+
+QPushButton:pressed {
+    background: #383838;
+    border-color: #3275e4;
+}
+
+QPushButton:checked {
+    background: #4285f4;
+    border-color: #3275e4;
+}
+
+/* Стили для вкладок внутри редактора */
+QTabWidget::pane {
+    border: 1px solid #BB908D;
+    border-radius: 4px;
+    margin: 2px;
+}
+
+QTabWidget::tab-bar {
+    left: 5px;
+}
+
+QTabBar::tab {
+    background: #393939;
+    border: none;
+    padding: 8px 8px;
+	margin: 0 0 4px 4px;
+	border-radius: 4px 4px 0 0;
+}
+
+QTabBar::tab:selected {
+    background: #525252;
+    border-bottom: 2px solid #4285f4;
+}
+
+QTabBar::tab:hover {
+    background: #525252;
+}
+
+/* Стили для разделителей */
+QSplitter::handle {
+    background: #454545;
+    width: 4px;
+}
+
+/* Стили для выпадающих списков */
+QComboBox {
+    background: #393939;
+    border: 1px solid #454545;
+    border-radius: 4px;
+    padding: 4px;
+    min-width: 100px;
+}
+
+QComboBox::drop-down {
+    border: none;
+    width: 20px;
+}
+
+QComboBox QAbstractItemView {
+    background: #393939;
+    border: 1px solid #4285f4;
+    selection-background-color: #4285f4;
+}
+
+/*Стили для полей ввода текста*/
+QLineEdit {
+    background: #323232;
+    border: 1px solid #454545;
+    border-radius: 4px;
+    padding: 6px;
+    selection-background-color: #4285f4;
+    selection-color: white;
+
+	font-family: &quot;Roboto&quot;;
+    font-size: 24px;
+}
+
+QLineEdit:focus {
+    border: 1px solid #4285f4;
+    background: #383838;
+}
+
+/* Стили для QScrollArea и QPlainTextEdit */
+QScrollArea, QPlainTextEdit, QTextEdit {
+    background-color: #252525;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    padding: 4px;
+    color: #e0e0e0;
+    selection-background-color: #4285f4;
+    selection-color: white;
+}
+
+/* Стили для SpinBox*/
+/* Стили для SpinBox */
+QSpinBox, QDoubleSpinBox {
+    background: #323232;
+    border: 1px solid #454545;
+    border-radius: 4px;
+    padding: 4px;
+    min-width: 80px;
+}
+
+QSpinBox::up-button, QDoubleSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    width: 20px;
+    border-left: 1px solid #454545;
+    border-bottom: 1px solid #454545;
+    border-radius: 0 4px 0 0;
+}
+
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    width: 20px;
+    border-left: 1px solid #454545;
+    border-radius: 0 0 4px 0;
+}
+
+QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {
+    image: url(:/img/img/ArrowUp.svg);
+    width: 10px;
+    height: 10px;
+}
+
+QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
+    image: url(:/img/img/ArrowDown.svg);
+    width: 10px;
+    height: 10px;
+}
+
+QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover,
+QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {
+    background: #424242;
+}
+
+/*Стили для контекстного меню*/
+QMenu {
+    background: #383838;
+    border: 1px solid #555;
+    padding: 4px;
+}
+
+QMenu::item {
+    padding: 6px 24px 6px 12px;
+}
+
+QMenu::item:selected {
+    background: #4285f4;
+    color: white;
+}
+
+QMenu::separator {
+    height: 1px;
+    background: #555;
+    margin: 4px 0;
+}
+
+QMenuBar {
+    background: transparent;
+    border: none;
+}
+
+QMenuBar::item {
+    background: transparent;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+QMenuBar::item:selected {
+    background: #4285f4;
+}
+
+QMenuBar::item:pressed {
+    background: #3275e4;
+}
+</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QGraphicsView" name="environment">
@@ -52,6 +285,9 @@
       <height>411</height>
      </rect>
     </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
     <property name="widgetResizable">
      <bool>true</bool>
     </property>
@@ -60,8 +296,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>187</width>
-       <height>407</height>
+       <width>181</width>
+       <height>401</height>
       </rect>
      </property>
     </widget>
@@ -83,8 +319,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>187</width>
-       <height>407</height>
+       <width>181</width>
+       <height>401</height>
       </rect>
      </property>
     </widget>
@@ -106,8 +342,8 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>387</width>
-       <height>127</height>
+       <width>381</width>
+       <height>121</height>
       </rect>
      </property>
     </widget>
@@ -119,7 +355,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>30</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -263,6 +499,18 @@
    </property>
    <property name="text">
     <string>Визуализировать</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::NoRole</enum>
+   </property>
+  </action>
+  <action name="stop_learning">
+   <property name="icon">
+    <iconset resource="resources.qrc">
+     <normaloff>:/img/img/Stop.svg</normaloff>:/img/img/Stop.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Остановить</string>
    </property>
    <property name="menuRole">
     <enum>QAction::NoRole</enum>

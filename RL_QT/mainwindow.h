@@ -7,6 +7,7 @@
 
 #include "qdockwidget.h"
 #include "environment/rl_scene.h"
+#include "trainers/qlearningtrainer.h"
 
 #include <QMainWindow>
 #include <QPushButton>
@@ -55,10 +56,17 @@ private slots:
 
     void on_visualize_learning_triggered();
 
-    void display_learning_charts(QVector<QVector<int>> rewards);
+    void display_learning_charts(QVector<QVector<int>> rewards, QPointF *coords);
+
+    void display_learning_logs_by_step(QVector<int> rewards, int episode_num);
+
+    void display_all_learning_logs(QVector<QVector<int>> rewards);
+
+    void on_stop_learning_triggered();
 
 signals:
     void click_in_interactive_mode();
+    void cancel_requested();
 
 private:
     RL_scene *scene;
@@ -67,6 +75,8 @@ private:
     QDockWidget *settings_dock;
     QDockWidget *learning_dock;
 
+    QLearningTrainer *trainer;
+    QThread *training_thread;
     QSpinBox *episode_spin;
     QDoubleSpinBox *alpha_spin;
     QDoubleSpinBox *gamma_spin;
@@ -89,5 +99,6 @@ private:
     void setup_q_learn_panel();
     void save_scene(QString &path);
     void load_scene(QString &path);
+    void set_ui_enabled(bool val);
 };
 #endif // MAINWINDOW_H

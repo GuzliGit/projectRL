@@ -174,6 +174,16 @@ void RL_scene::set_visualize_status(bool val)
     is_visualize_mod = val;
 }
 
+bool RL_scene::is_training()
+{
+    return is_training_mod;
+}
+
+void RL_scene::set_training(bool val)
+{
+    is_training_mod = val;
+}
+
 void RL_scene::load_cell(CellItem *cell)
 {
     for (auto item : all_cells)
@@ -250,6 +260,10 @@ void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
         this->views().first()->setCursor(c);
 
         event->accept();
+    }
+    else if (is_training_mod)
+    {
+        event->ignore();
     }
     else if (event->button() == Qt::LeftButton && !is_goal_selection) // Выделение объектов на сцене
     {
@@ -373,6 +387,11 @@ void RL_scene::mousePressEvent(QGraphicsSceneMouseEvent *event)
     this->update();
 }
 
+void RL_scene::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
+{
+    event->ignore();
+}
+
 void RL_scene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     if (is_panning) // Навигация в среде с помощью СКМ
@@ -386,6 +405,10 @@ void RL_scene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
         view->verticalScrollBar()->setValue(view->verticalScrollBar()->value() - delta.y());
 
         event->accept();
+    }
+    else if (is_training_mod)
+    {
+        event->ignore();
     }
     else if (selection_rect) // Выделение клеток
     {
@@ -480,6 +503,10 @@ void RL_scene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 
         event->accept();
     }
+    else if (is_training_mod)
+    {
+        event->ignore();
+    }
     else if (selection_rect && Qt::LeftButton) // Выделение клеток
     {
         removeItem(selection_rect);
@@ -492,13 +519,6 @@ void RL_scene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         }
 
         synchronize_animation();
-
-        // // Проверка выбора
-        // qDebug() << "New Selection\n";
-        // for (auto cell : selected_cells)
-        // {
-        //     qDebug() << cell->x() << cell->y();
-        // }
 
         is_left_button_pressed = false;
 
@@ -726,10 +746,12 @@ void RL_scene::start_qlearn(double alpha_t, double gamma_t, double epsilon_t, in
     const short agents_count = all_agents.size();
 
     QVector<QVector<int>> total_rewards(agents_count);
+    QPointF agents_coords[agents_count];
 
     for (int i = 0; i < agents_count; i++)
     {
         total_rewards[i] = QVector<int>(episodes_count);
+        agents_coords[i] = QPointF(all_agents[i]->pos().x() / SCALE_FACTOR, all_agents[i]->pos().y() / SCALE_FACTOR);
         for (int j = 0; j < episodes_count; j++)
         {
             total_rewards[i][j] = 0;
@@ -767,23 +789,6 @@ void RL_scene::start_qlearn(double alpha_t, double gamma_t, double epsilon_t, in
             train();
         }
 
-        //qDebug() << "Episode " << k << " epsilon: " << epsilon;
-        //qDebug() << get_current_buf_size(0);
-
-        // double **Q = get_q_table(0);
-        // if (Q)
-        // {
-        //     for (int s = 0; s < state_size; ++s)
-        //     {
-        //         QString row = QString("State %1: ").arg(s);
-        //         for (int a = 0; a < max_actions; ++a)
-        //         {
-        //             row += QString::number(Q[s][a]) + " ";
-        //         }
-        //         qDebug() << row;
-        //     }
-        // }
-
         if (epsilon_t < 0.1)
         {
             epsilon_t = 0.1;
@@ -800,9 +805,8 @@ void RL_scene::start_qlearn(double alpha_t, double gamma_t, double epsilon_t, in
     reset_env();
     free_qlearn();
 
-    emit learning_finished(total_rewards);
-
-    qDebug() << "Done";
+    emit update_logs(total_rewards);
+    emit learning_finished(total_rewards, agents_coords);
 }
 
 void RL_scene::get_agents_states(short *states)
@@ -817,26 +821,62 @@ void RL_scene::get_agents_states(short *states)
 void RL_scene::set_actions_get_rewards(char *actions, signed char *rewards)
 {
     int size = all_agents.size();
+
+    if (!is_visualize_mod)
+    {
+        for (int i = 0; i < size; i++)
+        {
+            switch (actions[i])
+            {
+            case AgentActions::MoveForward:
+                rewards[i] = execute_action(i, all_agents[i]->pos() + QPointF(0, -SCALE_FACTOR));
+                break;
+
+            case AgentActions::MoveBackwards:
+                rewards[i] = execute_action(i, all_agents[i]->pos() + QPointF(0, SCALE_FACTOR));
+                break;
+
+            case AgentActions::MoveToTheLeft:
+                rewards[i] = execute_action(i, all_agents[i]->pos() + QPointF(-SCALE_FACTOR, 0));
+                break;
+
+            case AgentActions::MoveToTheRight:
+                rewards[i] = execute_action(i, all_agents[i]->pos() + QPointF(SCALE_FACTOR, 0));
+                break;
+            }
+        }
+
+        return;
+    }
+
     for (int i = 0; i < size; i++)
     {
+        QPointF new_pos;
         switch (actions[i])
         {
         case AgentActions::MoveForward:
-            rewards[i] = execute_action(i, all_agents[i]->pos() + QPointF(0, -SCALE_FACTOR));
+            new_pos = all_agents[i]->pos() + QPointF(0, -SCALE_FACTOR);
             break;
 
         case AgentActions::MoveBackwards:
-            rewards[i] = execute_action(i, all_agents[i]->pos() + QPointF(0, SCALE_FACTOR));
+            new_pos = all_agents[i]->pos() + QPointF(0, SCALE_FACTOR);
             break;
 
         case AgentActions::MoveToTheLeft:
-            rewards[i] = execute_action(i, all_agents[i]->pos() + QPointF(-SCALE_FACTOR, 0));
+            new_pos = all_agents[i]->pos() + QPointF(-SCALE_FACTOR, 0);
             break;
 
         case AgentActions::MoveToTheRight:
-            rewards[i] = execute_action(i, all_agents[i]->pos() + QPointF(SCALE_FACTOR, 0));
+            new_pos = all_agents[i]->pos() + QPointF(SCALE_FACTOR, 0);
             break;
         }
+
+        QMetaObject::invokeMethod(this,
+                                  "execute_action_in_main",
+                                  Qt::BlockingQueuedConnection,
+                                  Q_RETURN_ARG(signed char, rewards[i]),
+                                  Q_ARG(int, i),
+                                  Q_ARG(QPointF, new_pos));
     }
 }
 
@@ -894,24 +934,55 @@ signed char RL_scene::execute_action(int agent_id, QPointF new_pos)
 void RL_scene::get_agents_done_status(char *dones)
 {
     int size = all_agents.size();
-    for (int i = 0; i < size; i++)
+
+    if (!is_visualize_mod)
     {
-        if (all_agents[i]->is_done())
+        for (int i = 0; i < size; i++)
         {
-            dones[i] = 1;
-            continue;
+            if (all_agents[i]->is_done())
+            {
+                dones[i] = 1;
+                continue;
+            }
+
+            if (all_agents[i]->pos() == all_agents[i]->get_goal()->pos())
+            {
+                all_agents[i]->set_done(true);
+                dones[i] = 1;
+            }
+            else
+            {
+                dones[i] = 0;
+            }
         }
 
-        if (all_agents[i]->pos() == all_agents[i]->get_goal()->pos())
-        {
-            all_agents[i]->set_done(true);
-            dones[i] = 1;
-        }
-        else
-        {
-            dones[i] = 0;
-        }
+        return;
     }
+
+    for (int i = 0; i < size; i++)
+    {
+        bool done = false;
+        QMetaObject::invokeMethod(this,
+                                  "get_agents_done_status_in_main",
+                                  Qt::BlockingQueuedConnection,
+                                  Q_RETURN_ARG(bool, done),
+                                  Q_ARG(int, i));
+
+        dones[i] = done ? 1 : 0;
+    }
+}
+
+bool RL_scene::get_agents_done_status_in_main(int agent_id)
+{
+    if (all_agents[agent_id]->is_done())
+        return true;
+
+    if (all_agents[agent_id]->pos() == all_agents[agent_id]->get_goal()->pos())
+    {
+        all_agents[agent_id]->set_done(true);
+        return true;
+    }
+    return false;
 }
 
 void RL_scene::reset_env()
