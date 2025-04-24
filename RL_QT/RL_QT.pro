@@ -19,6 +19,8 @@ SOURCES += \
     environment/cellitem.cpp \
     environment/environmenteditor.cpp \
     environment/floorcell.cpp \
+    environment/gatecell.cpp \
+    environment/riskycell.cpp \
     environment/rl_scene.cpp \
     environment/wallcell.cpp \
     main.cpp \
@@ -36,6 +38,8 @@ HEADERS += \
     environment/cellitem.h \
     environment/environmenteditor.h \
     environment/floorcell.h \
+    environment/gatecell.h \
+    environment/riskycell.h \
     environment/rl_scene.h \
     environment/wallcell.h \
     mainwindow.h \

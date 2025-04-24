@@ -42,8 +42,8 @@ QMainWindow{
 QDockWidget {
     background: #383838;
     border: 1px solid #454545;
-    /*titlebar-close-icon: url(:/img/img/Stop.svg);
-    titlebar-normal-icon: url(:/icons/dock.svg);*/
+    titlebar-close-icon: url(:/img/img/CloseDock.svg);
+    titlebar-normal-icon: url(:/img/img/RollDock.svg);
     margin: 2px;
 }
 
@@ -170,7 +170,6 @@ QScrollArea, QPlainTextEdit, QTextEdit {
 }
 
 /* Стили для SpinBox*/
-/* Стили для SpinBox */
 QSpinBox, QDoubleSpinBox {
     background: #323232;
     border: 1px solid #454545;

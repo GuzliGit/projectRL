@@ -9,7 +9,9 @@ enum class CellType
 {
     Empty,
     Floor,
-    Wall
+    Wall,
+    Gate,
+    Risky
 };
 
 class CellItem : public QObject, public QGraphicsPixmapItem
@@ -30,6 +32,8 @@ public:
     virtual CellType get_type() const { return CellType::Empty; }
     virtual void update_cell_appearance();
     virtual bool is_walkable() const { return false; };
+    virtual void reset() { return; }
+    virtual void update_status(bool has_agent) { return; }
 
 private:
     int width;

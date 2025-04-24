@@ -53,6 +53,11 @@ void QLearningTrainer::start_training(double alpha_t, double gamma_t, double eps
 
             store_experience(states, actions, rewards, next_states, dones);
             train();
+
+            if (cancel_requested)
+                break;
+
+            QThread::msleep(16);
         }
 
         for (int i = 0; i < agents_count; i++)

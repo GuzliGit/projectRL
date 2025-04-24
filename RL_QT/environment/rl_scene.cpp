@@ -897,6 +897,23 @@ bool RL_scene::is_new_point_inside_scene(QPointF new_point)
 
 signed char RL_scene::execute_action(int agent_id, QPointF new_pos)
 {
+    if (agent_id == 0)
+    {
+        for (auto item : dynamic_cells)
+        {
+            for (int i = 0; i < all_agents.size(); i++)
+            {
+                if (all_agents[i]->pos() == item->pos())
+                {
+                    item->update_status(true);
+                    break;
+                }
+            }
+
+            item->update_status(false);
+        }
+    }
+
     if (!is_new_point_inside_scene(new_pos))
     {
         return WALL_REWARD;
@@ -923,6 +940,21 @@ signed char RL_scene::execute_action(int agent_id, QPointF new_pos)
             all_agents[agent_id]->setPos(new_pos);
             return FLOOR_REWARD;
             break;
+        case CellType::Gate:
+            if (cell->is_walkable())
+            {
+                all_agents[agent_id]->setPos(new_pos);
+                return FLOOR_REWARD;
+            }
+            return GATE_BLOCKED_REWARD;
+            break;
+        case CellType::Risky:
+            if (cell->is_walkable())
+            {
+                all_agents[agent_id]->setPos(new_pos);
+                return RISKY_REWARD;
+            }
+            return STUCK_REWARD;
         }
     }
     else
@@ -972,6 +1004,16 @@ void RL_scene::get_agents_done_status(char *dones)
     }
 }
 
+void RL_scene::prepare_dynamic_cells()
+{
+    dynamic_cells.clear();
+    for (auto cell : all_cells)
+    {
+        if (cell->get_type() == CellType::Gate || cell->get_type() == CellType::Risky)
+            dynamic_cells.append(cell);
+    }
+}
+
 bool RL_scene::get_agents_done_status_in_main(int agent_id)
 {
     if (all_agents[agent_id]->is_done())
@@ -993,7 +1035,10 @@ void RL_scene::reset_env()
         agent->set_done(false);
     }
 
-    // Добавить сброс случайных препятствий
+    for (auto cell : dynamic_cells)
+    {
+        cell->reset();
+    }
 
     this->update();
 }

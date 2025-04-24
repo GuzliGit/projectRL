@@ -4,7 +4,7 @@
 extern "C" {
 #endif
 
-#define BUFFER_SIZE 10000
+#define BUFFER_SIZE 1000
 
 typedef struct
 {

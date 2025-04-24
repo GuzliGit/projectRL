@@ -2,6 +2,8 @@
 #include "floorcell.h"
 #include "wallcell.h"
 #include "cellfactory.h"
+#include "gatecell.h"
+#include "riskycell.h"
 #include "agent/agentfactory.h"
 
 #include <QGraphicsScene>
@@ -24,6 +26,12 @@ void EnvironmentEditor::change_cells(QList<CellItem*>& selected_cells, CellType 
             break;
         case CellType::Wall:
             new_item = CellFactory::convert_cell<WallCell>(old_item);
+            break;
+        case CellType::Gate:
+            new_item = CellFactory::convert_cell<GateCell>(old_item);
+            break;
+        case CellType::Risky:
+            new_item = CellFactory::convert_cell<RiskyCell>(old_item);
             break;
         }
 

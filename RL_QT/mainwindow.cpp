@@ -6,6 +6,8 @@
 #include "environment/cellitem.h"
 #include "environment/floorcell.h"
 #include "environment/wallcell.h"
+#include "environment/gatecell.h"
+#include "environment/riskycell.h"
 
 #include <QDockWidget>
 #include <QLabel>
@@ -32,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     setup_toolbar();
+    setup_logs();
     setup_widgets();
     setup_editor_panel_widgets();
     setup_settings_panel_widgets();
@@ -169,6 +172,24 @@ void MainWindow::setup_editor_panel_widgets()
     });
 
     obstacle_tab->add_to_layout(def_obstacle);
+
+    QPushButton *gate_obstacle = create_editor_panel_button("Дин. стена", 70, 95, ":/img/img/GateCellFree.svg",
+                                                            QSize(54, 54), obstacle_tab);
+    new_type = CellType::Gate;
+    connect(gate_obstacle, &QPushButton::pressed, this, [this, new_type](){
+        this->scene->change_selected_cells(new_type);
+    });
+
+    obstacle_tab->add_to_layout(gate_obstacle);
+
+    QPushButton *risky_obstacle = create_editor_panel_button("Риск", 70, 95, ":/img/img/RiskyCellFree.svg",
+                                                             QSize(54, 54), obstacle_tab);
+    new_type = CellType::Risky;
+    connect(risky_obstacle, &QPushButton::pressed, this, [this, new_type](){
+        this->scene->change_selected_cells(new_type);
+    });
+
+    obstacle_tab->add_to_layout(risky_obstacle);
 
     QScrollArea *obstacle_scroll_area = new QScrollArea;
     obstacle_scroll_area->setWidgetResizable(true);
@@ -340,6 +361,60 @@ void MainWindow::setup_cell_settings(CellItem* cell)
         cell_description->setText("Клетка стены выступает в качестве препятствия, "
                                   "которое агент не может пройти никаким образом.");
         break;
+    case CellType::Gate:
+    {
+        cell_name->setText("Динамическая стена");
+        image_container->setIcon(QIcon(":/img/img/GateCellFree.svg"));
+        cell_description->setText("Клетка динамической стены выступает в качестве динамического препятствия, которое с некоторой вероятностью может быть перекрыто."
+                                  "Агент может пройти только в момент, когда данная клетка не перекрыта.");
+
+        QLabel *closing_spin_label = new QLabel;
+        closing_spin_label->setWordWrap(true);
+        closing_spin_label->setAlignment(Qt::AlignCenter);
+        closing_spin_label->setText("Шанс перекрытия клетки");
+        settings_layout->addWidget(closing_spin_label);
+
+        GateCell *gate_cell = dynamic_cast<GateCell*>(cell);
+
+        QSpinBox* closing_chance_spin = new QSpinBox();
+        closing_chance_spin->setWrapping(true);
+        closing_chance_spin->setRange(1, 90);
+        closing_chance_spin->setValue(gate_cell->get_closing_chance());
+        closing_chance_spin->setAlignment(Qt::AlignCenter);
+
+        connect(closing_chance_spin, &QSpinBox::valueChanged, gate_cell, [gate_cell](int value){
+            gate_cell->set_closing_chance(value);
+        });
+
+        settings_layout->addWidget(closing_chance_spin);
+        break;
+    }
+    case CellType::Risky:
+    {
+        cell_name->setText("Рискованная клетка");
+        image_container->setIcon(QIcon(":/img/img/RiskyCellFree.svg"));
+        cell_description->setText("Рискованная клетка выступает в качестве динамического препятствия, в которой с некоторой вероятностью может застрять агент.");
+
+        QLabel *stucked_spin_label = new QLabel;
+        stucked_spin_label->setWordWrap(true);
+        stucked_spin_label->setAlignment(Qt::AlignCenter);
+        stucked_spin_label->setText("Шанс застревания агента");
+        settings_layout->addWidget(stucked_spin_label);
+
+        RiskyCell *risky_cell = dynamic_cast<RiskyCell*>(cell);
+
+        QSpinBox* stuck_chance_spin = new QSpinBox();
+        stuck_chance_spin->setWrapping(true);
+        stuck_chance_spin->setRange(1, 90);
+        stuck_chance_spin->setValue(risky_cell->get_stuck_chance());
+        stuck_chance_spin->setAlignment(Qt::AlignCenter);
+
+        connect(stuck_chance_spin, &QSpinBox::valueChanged, risky_cell, [risky_cell](int val){
+            risky_cell->set_stuck_chance(val);
+        });
+
+        settings_layout->addWidget(stuck_chance_spin);
+    }
     }
 
     ui->rl_settings_panel->setWidget(settings_container);
@@ -466,7 +541,20 @@ void MainWindow::save_scene(QString &path)
                 break;
             case CellType::Wall:
                 break;
-                // Для уникальных свойств (если таковые будут)
+            case CellType::Gate:
+            {
+                if (GateCell* item = dynamic_cast<GateCell*>(cell))
+                    out << item->get_closing_chance();
+                break;
+            }
+            case CellType::Risky:
+            {
+                if (RiskyCell* item = dynamic_cast<RiskyCell*>(cell))
+                {
+                    out << item->get_stuck_chance();
+                }
+                break;
+            }
             }
         }
     }
@@ -559,6 +647,26 @@ void MainWindow::load_scene(QString &path)
             {
                 WallCell *cell = new WallCell();
                 cell->setPos(pos);
+                scene->load_cell(cell);
+                break;
+            }
+            case CellType::Gate:
+            {
+                GateCell *cell = new GateCell();
+                cell->setPos(pos);
+                int closing_chance;
+                in >> closing_chance;
+                cell->set_closing_chance(closing_chance);
+                scene->load_cell(cell);
+                break;
+            }
+            case CellType::Risky:
+            {
+                RiskyCell *cell = new RiskyCell();
+                cell->setPos(pos);
+                int stuck_chance;
+                in >> stuck_chance;
+                cell->set_stuck_chance(stuck_chance);
                 scene->load_cell(cell);
                 break;
             }
@@ -853,6 +961,7 @@ void MainWindow::on_start_learning_triggered()
             trainer = new QLearningTrainer(scene);            
 
             scene->set_training(true);
+            scene->prepare_dynamic_cells();
             set_ui_enabled(false);
 
             trainer->moveToThread(training_thread);
@@ -875,6 +984,7 @@ void MainWindow::on_start_learning_triggered()
             ui->log_panel->clear();
             ui->log_panel->appendPlainText(QString("Начало обучения: [%1]").arg(QDateTime::currentDateTime().toString()));
 
+            scene->prepare_dynamic_cells();
             scene->start_qlearn(alpha_spin->value(), gamma_spin->value(), start_epsilon_spin->value(), episode_spin->value());
         }
 
@@ -962,6 +1072,27 @@ void MainWindow::setup_toolbar()
     });
 }
 
+void MainWindow::setup_logs()
+{
+    int font_id = QFontDatabase::addApplicationFont(":/font/fonts/Roboto-Bold.ttf");;
+    QStringList font_families = QFontDatabase::applicationFontFamilies(font_id);
+    if (!font_families.isEmpty())
+    {
+        QString font_family = font_families.at(0);
+
+        ui->log_panel->setStyleSheet(
+            QString("QPlainTextEdit {"
+                    "    font-family: '%1';"
+                    "    font-weight: bold;"
+                    "    font-size: 16pt;"
+                    "}"
+                    ).arg(font_family)
+            );
+    }
+
+    ui->log_panel->setReadOnly(true);
+}
+
 
 void MainWindow::on_visualize_learning_triggered()
 {
@@ -1030,7 +1161,7 @@ void MainWindow::display_all_learning_logs(QVector<QVector<int> > rewards)
     {
         for (int j = 0; j < rewards[i].size(); j++)
         {
-            ui->log_panel->appendPlainText(QString("Агент %1 | Эпизод %2: %3").arg(j + 1).arg(i + 1).arg(rewards[i][j]));
+            ui->log_panel->appendPlainText(QString("Агент %1 | Эпизод %2: %3").arg(i + 1).arg(j + 1).arg(rewards[i][j]));
         }
     }
 }

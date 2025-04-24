@@ -15,6 +15,16 @@
         <file>img/Stop.svg</file>
         <file>img/ArrowUp.svg</file>
         <file>img/ArrowDown.svg</file>
+        <file>img/RollDock.svg</file>
+        <file>img/CloseDock.svg</file>
+        <file>img/GateCellFreeWithShadow.svg</file>
+        <file>img/GateCellFree.svg</file>
+        <file>img/GateCellBlockedWithShadow.svg</file>
+        <file>img/GateCellBlocked.svg</file>
+        <file>img/RiskyCellStuckedWithShadow.svg</file>
+        <file>img/RiskyCellStucked.svg</file>
+        <file>img/RiskyCellFreeWithShadow.svg</file>
+        <file>img/RiskyCellFree.svg</file>
     </qresource>
     <qresource prefix="/font">
         <file>fonts/RobotoCondensed-Regular.ttf</file>

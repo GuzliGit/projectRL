@@ -1,9 +1,12 @@
 #ifndef RL_SCENE_H
 #define RL_SCENE_H
 
+#define STUCK_REWARD -10
 #define WALL_REWARD -5
+#define GATE_BLOCKED_REWARD -4
 #define AGENT_COLLISION_REWARD -3
 #define FLOOR_REWARD -1
+#define RISKY_REWARD 0
 #define GOAL_REWARD 120
 
 #include "environment/cellitem.h"
@@ -41,6 +44,7 @@ public:
     void update_appearance();
     bool is_correct_environment();
     void start_qlearn(double alpha_t, double gamma_t, double epsilon_t, int episodes_count);
+    void prepare_dynamic_cells();
 
 protected:
     void wheelEvent(QGraphicsSceneWheelEvent *event) override;
@@ -85,6 +89,7 @@ private:
     QGraphicsRectItem *selection_rect = nullptr;
     QList<CellItem*> all_cells;
     QList<AgentObj*> all_agents;
+    QList<CellItem*> dynamic_cells;
     QList<CellItem*> selected_cells;
     QList<AgentObj*> selected_agents;
 
