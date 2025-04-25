@@ -30,6 +30,8 @@ extern Q_Agent *agents;
 
 void init_qlearn(short state_size, short agents_count, double alpha, double gamma, double epsilon);
 
+void set_q_table(int agent_id, double** q);
+
 void choose_actions(short *states, char *actions);
 
 void store_experience(short *states, char *actions, signed char *rewards, short *next_states, char *dones);

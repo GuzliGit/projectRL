@@ -8,8 +8,6 @@
 #include <QParallelAnimationGroup>
 #include <QGraphicsSceneMouseEvent>
 
-//#define MIN_VIEW_RANGE 32
-
 enum AgentType
 {
     Default
@@ -32,7 +30,6 @@ public:
     ~AgentObj();
     int get_width();
     int get_height();
-    //int get_view_range();
     void set_selected(bool agent_selected);
     bool is_selected() const;
     void set_goal(CellItem* new_goal);
@@ -44,8 +41,13 @@ public:
     void reset_pos();
     bool is_done();
     void set_done(bool done_status);
-    //virtual void set_view_range(int range);
     virtual AgentType get_type() { return AgentType::Default; }
+    bool has_learning_file();
+    QString get_learning_file_path();
+    void set_learning_file(QString file_path);
+    double **get_q_table();
+    void set_q_table(double **q, int states, int actions = 4);
+    void delete_learning_file();
 
 protected:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = nullptr) override;
@@ -53,7 +55,6 @@ protected:
 private:
     int width;
     int height;
-    //int view_range;
     bool selected = false;
     bool done = false;
     QPointF start_pos = QPointF(-10, -10);
@@ -61,6 +62,10 @@ private:
     QPainter* painter;
     CellItem* goal_cell = nullptr;
     QGraphicsPixmapItem* goal_pixmap = nullptr;
+
+    QString learn_path = nullptr;
+    double **Q = nullptr;
+    int state_size;
 
     void animate_selection();
     void stop_animation();

@@ -19,6 +19,7 @@ signals:
     void update_logs(QVector<int> rewards, int episode_num);
     void training_finished(QVector<QVector<int>> rewards, QPointF *coords);
     void scene_disabled(bool val);
+    void save_learning(QVector<double**> q_tabs, QList<AgentObj*> agents);
 
 private:
     RL_scene *m_scene;

@@ -761,6 +761,14 @@ void RL_scene::start_qlearn(double alpha_t, double gamma_t, double epsilon_t, in
     prepare_for_learning();
     init_qlearn(state_size, agents_count, alpha_t, gamma_t, epsilon_t);
 
+    for (int i = 0; i < agents_count; i++)
+    {
+        if (all_agents[i]->has_learning_file() && all_agents[i]->get_learning_file_path().endsWith(".qtab"))
+        {
+            set_q_table(i, all_agents[i]->get_q_table());
+        }
+    }
+
     short states[agents_count];
     char actions[agents_count];
     short next_states[agents_count];
@@ -801,6 +809,14 @@ void RL_scene::start_qlearn(double alpha_t, double gamma_t, double epsilon_t, in
 
         set_epsilon(epsilon_t);
     }
+
+    QVector<double**> q_tables;
+    for (int i = 0; i < agents_count; i++)
+    {
+        q_tables.append(get_q_table(i));
+    }
+
+    emit save_learning(q_tables, all_agents);
 
     reset_env();
     free_qlearn();
@@ -901,16 +917,17 @@ signed char RL_scene::execute_action(int agent_id, QPointF new_pos)
     {
         for (auto item : dynamic_cells)
         {
+            bool has_agent = false;
             for (int i = 0; i < all_agents.size(); i++)
             {
                 if (all_agents[i]->pos() == item->pos())
                 {
-                    item->update_status(true);
+                    has_agent = true;
                     break;
                 }
             }
 
-            item->update_status(false);
+            item->update_status(has_agent);
         }
     }
 
@@ -955,6 +972,7 @@ signed char RL_scene::execute_action(int agent_id, QPointF new_pos)
                 return RISKY_REWARD;
             }
             return STUCK_REWARD;
+            break;
         }
     }
     else

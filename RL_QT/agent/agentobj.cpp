@@ -7,6 +7,7 @@
 #include <QPen>
 #include <QPainter>
 #include <QGraphicsView>
+#include <QFileDialog>
 
 AgentObj::AgentObj(QGraphicsItem *parent) :
     QGraphicsPixmapItem(parent),
@@ -16,7 +17,6 @@ AgentObj::AgentObj(QGraphicsItem *parent) :
     width = pixmap.width();
     height = pixmap.height();
     setZValue(1);
-    //view_range = MIN_VIEW_RANGE;
 
     goal_pixmap = new QGraphicsPixmapItem;
     goal_pixmap->setPixmap(QPixmap(":/img/img/Goal.svg"));
@@ -47,11 +47,6 @@ int AgentObj::get_height()
 {
     return height;
 }
-
-// int AgentObj::get_view_range()
-// {
-//     return view_range / width;
-// }
 
 void AgentObj::set_selected(bool agent_selected)
 {
@@ -142,14 +137,57 @@ void AgentObj::set_done(bool done_status)
     done = done_status;
 }
 
-// void AgentObj::set_view_range(int range)
-// {
-//     if (range < MIN_VIEW_RANGE)
-//         return;
+bool AgentObj::has_learning_file()
+{
+    return learn_path != nullptr;
+}
 
-//     view_range = range;
-//     this->scene()->update();
-// }
+QString AgentObj::get_learning_file_path()
+{
+    if (learn_path != nullptr)
+        return learn_path;
+    else
+        return "Не задан";
+}
+
+void AgentObj::set_learning_file(QString file_path)
+{
+    learn_path = file_path;
+}
+
+double **AgentObj::get_q_table()
+{
+    return Q;
+}
+
+void AgentObj::set_q_table(double **q, int states, int actions)
+{
+    delete_learning_file();
+    state_size = states;
+
+    Q = new double*[state_size];
+    for (int i = 0; i < state_size; i++)
+    {
+        Q[i] = new double[actions];
+        for (int j = 0; j < actions; j++)
+        {
+            Q[i][j] = q[i][j];
+        }
+    }
+}
+
+void AgentObj::delete_learning_file()
+{
+    if (Q != nullptr) {
+        for (int i = 0; i < state_size; i++)
+            delete[] Q[i];
+
+        delete[] Q;
+    }
+
+    Q = nullptr;
+    learn_path = nullptr;
+}
 
 void AgentObj::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
@@ -175,16 +213,6 @@ void AgentObj::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, 
             painter->setOpacity(1);
             painter->drawEllipse(goal_rect);
         }
-
-        // painter->save();
-
-        // painter->setPen(QPen(Qt::black, 2));
-        // painter->setOpacity(0.8);
-        // painter->setBrush(Qt::NoBrush);
-
-        // painter->drawEllipse(boundingRect().center(), view_range + 16, view_range + 16);
-
-        // painter->restore();
     }
 }
 

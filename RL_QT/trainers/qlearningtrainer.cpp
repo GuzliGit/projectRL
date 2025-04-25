@@ -24,6 +24,14 @@ void QLearningTrainer::start_training(double alpha_t, double gamma_t, double eps
     QMetaObject::invokeMethod(m_scene, "prepare_for_learning", Qt::BlockingQueuedConnection);
     init_qlearn(state_size, agents_count, alpha_t, gamma_t, epsilon_t);
 
+    for (int i = 0; i < agents_count; i++)
+    {
+        if (m_scene->all_agents[i]->has_learning_file() && m_scene->all_agents[i]->get_learning_file_path().endsWith(".qtab"))
+        {
+            set_q_table(i, m_scene->all_agents[i]->get_q_table());
+        }
+    }
+
     short states[agents_count];
     char actions[agents_count];
     short next_states[agents_count];
@@ -79,6 +87,14 @@ void QLearningTrainer::start_training(double alpha_t, double gamma_t, double eps
 
         set_epsilon(epsilon_t);
     }
+
+    QVector<double**> q_tables;
+    for (int i = 0; i < agents_count; i++)
+    {
+        q_tables.append(get_q_table(i));
+    }
+
+    emit save_learning(q_tables, m_scene->all_agents);
 
     emit training_finished(total_rewards, agents_coords);
     QMetaObject::invokeMethod(m_scene, "reset_env", Qt::BlockingQueuedConnection);

@@ -71,6 +71,7 @@ signals:
     void update_settings();
     void update_logs(QVector<QVector<int>> rewards);
     void learning_finished(QVector<QVector<int>> rewards, QPointF *coords);
+    void save_learning(QVector<double**> q_tabs, QList<AgentObj*> agents);
 
 private:
     EnvironmentEditor *editor;

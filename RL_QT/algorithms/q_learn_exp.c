@@ -172,3 +172,14 @@ char is_actions_limit(int agent_id)
 
     return 0;
 }
+
+void set_q_table(int agent_id, double **q)
+{
+    for (int i = 0; i < state_size; i++)
+    {
+        for (int j = 0; j < max_actions; j++)
+        {
+            agents[agent_id].Q[i][j] = q[i][j];
+        }
+    }
+}

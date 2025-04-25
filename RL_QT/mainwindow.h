@@ -64,6 +64,8 @@ private slots:
 
     void on_stop_learning_triggered();
 
+    void save_agents_q_tabs(QVector<double**> q_tables, QList<AgentObj*> agents);
+
 signals:
     void click_in_interactive_mode();
     void cancel_requested();
@@ -100,6 +102,7 @@ private:
     void setup_q_learn_panel();
     void save_scene(QString &path);
     void load_scene(QString &path);
+    void load_agent_learning(AgentObj* agent);
     void set_ui_enabled(bool val);
 };
 #endif // MAINWINDOW_H

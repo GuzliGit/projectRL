@@ -52,6 +52,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(scene, &RL_scene::update_settings, this, &MainWindow::onScene_selection_changed);
     connect(scene, &RL_scene::learning_finished, this, &MainWindow::display_learning_charts);
     connect(scene, &RL_scene::update_logs, this, &MainWindow::display_all_learning_logs);
+    connect(scene, &RL_scene::save_learning, this, &MainWindow::save_agents_q_tabs);
 }
 
 MainWindow::~MainWindow()
@@ -297,6 +298,38 @@ void MainWindow::setup_agent_settings(AgentObj* agent)
         this->scene->remove_agent_goal();
     });
     settings_layout->addWidget(agent_goal_remove);
+
+    QLabel *learn_file_label = new QLabel;
+    learn_file_label->setAlignment(Qt::AlignCenter);
+    learn_file_label->setWordWrap(true);
+    learn_file_label->setText("Файл обучения:");
+    settings_layout->addWidget(learn_file_label);
+
+    QTextEdit *learn_file_path = new QTextEdit;
+    learn_file_path->setAlignment(Qt::AlignCenter);
+    learn_file_path->setFixedHeight(learn_file_path->fontMetrics().height() * 3 + 20);
+    learn_file_path->setWordWrapMode(QTextOption::WordWrap);
+    learn_file_path->setReadOnly(true);
+    learn_file_path->setText(agent->get_learning_file_path());
+    settings_layout->addWidget(learn_file_path);
+
+    QPushButton *learn_file_set = new QPushButton;
+    learn_file_set->setText("Задать файл");
+
+    QPushButton *learn_file_remove = new QPushButton;
+    learn_file_remove->setText("Убрать файл");
+
+    connect(learn_file_set, &QPushButton::pressed, this, [this, agent, learn_file_path](){
+        this->load_agent_learning(agent);
+        learn_file_path->setText(agent->get_learning_file_path());
+    });
+    settings_layout->addWidget(learn_file_set);
+
+    connect(learn_file_remove, &QPushButton::pressed, agent, [agent, learn_file_path](){
+        agent->delete_learning_file();
+        learn_file_path->setText(agent->get_learning_file_path());
+    });
+    settings_layout->addWidget(learn_file_remove);
 
     switch (agent->get_type())
     {
@@ -612,6 +645,7 @@ void MainWindow::load_scene(QString &path)
     connect(scene, &RL_scene::update_settings, this, &MainWindow::onScene_selection_changed);
     connect(scene, &RL_scene::learning_finished, this, &MainWindow::display_learning_charts);
     connect(scene, &RL_scene::update_logs, this, &MainWindow::display_all_learning_logs);
+    connect(scene, &RL_scene::save_learning, this, &MainWindow::save_agents_q_tabs);
 
     scene->setSceneRect(0, 0, width, height);
     ui->environment->setScene(scene);
@@ -696,11 +730,6 @@ void MainWindow::load_scene(QString &path)
                 agent->setPos(pos);
                 scene->load_agent(agent);
 
-                // int view_range;
-                // in >> view_range;
-
-                //agent->set_view_range(view_range);
-
                 if (new_goal != nullptr)
                     agent->set_goal(new_goal);
 
@@ -711,6 +740,145 @@ void MainWindow::load_scene(QString &path)
     }
 
     file.close();
+}
+
+void MainWindow::save_agents_q_tabs(QVector<double**> q_tables,  QList<AgentObj*> agents)
+{
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Подтверждение", "Сохранить прогресс агентов?");
+
+    if (reply == QMessageBox::No)
+        return;
+
+    int agents_with_file = 0;
+    for (auto agent : agents)
+    {
+        if (agent->has_learning_file())
+            agents_with_file++;
+    }
+
+    QString dir_path;
+
+    if (agents_with_file != agents.size())
+    {
+        dir_path = QFileDialog::getExistingDirectory(this, tr("Выберите директорию для сохранения"), QDir::homePath(),
+                                                             QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+
+        if (dir_path.isEmpty())
+            return;
+    }
+
+    qreal width = scene->width();
+    qreal height = scene->height();
+    int state_size = scene->width() / SCALE_FACTOR * scene->height() / SCALE_FACTOR;
+    int actions_size = 4;
+
+    QDateTime current_time = QDateTime::currentDateTime();
+    QString timestamp = current_time.toString("yyyyMMdd_hhmmss");
+
+    for (int i = 0; i < q_tables.size(); i++)
+    {
+        QString filename;
+
+        if (!agents[i]->has_learning_file())
+        {
+            QString file = QString("agent%1_%2.qtab")
+                                   .arg(i, 2, 10, QLatin1Char('0'))
+                                   .arg(timestamp);
+            filename = dir_path + "/" + file;
+        }
+        else
+        {
+            filename = agents[i]->get_learning_file_path();
+        }
+
+        QFile file(filename);
+        if (!file.open(QIODevice::WriteOnly))
+        {
+            QMessageBox::warning(this, "Ошибка", QString("Не удалось создать файл для агента %1").arg(i));
+            continue;
+        }
+
+        QDataStream out(&file);
+
+        out << width;
+        out << height;
+
+        double** q_table = q_tables[i];
+        for (int s = 0; s < state_size; ++s)
+        {
+            for (int a = 0; a < actions_size; ++a)
+            {
+                out << q_table[s][a];
+            }
+        }
+
+        file.close();
+    }
+}
+
+void MainWindow::load_agent_learning(AgentObj* agent)
+{
+    bool is_q_tab = false;
+    QString filename = QFileDialog::getOpenFileName(this, tr("Загрузить файл обучения"), QDir::homePath(),
+                                                    tr("Бинарные файлы табличных алгоритмов (*.qtab)"));
+
+    if (!filename.isEmpty())
+    {
+        if (filename.endsWith(".qtab", Qt::CaseInsensitive))
+        {
+            is_q_tab = true;
+        }
+        else
+        {
+            qDebug() << "Incorrect foramt of file";
+            return;
+        }
+
+        QFile file(filename);
+        if (!file.open(QIODevice::ReadOnly))
+        {
+            QMessageBox::warning(this, "Ошибка", "Не удалось открыть файл проекта!");
+            return;
+        }
+
+        QDataStream in(&file);
+
+        qreal width;
+        qreal height;
+
+        in >> width;
+        in >> height;
+
+        if (scene->width() != width || scene->height() != height)
+        {
+            QMessageBox::warning(this, "Ошибка", "Агент должен быть обучен в среде тех же размеров!");
+            file.close();
+            return;
+        }
+
+        if (is_q_tab)
+        {
+            int states_num = (scene->width() / SCALE_FACTOR * scene->height() / SCALE_FACTOR);
+            int actions_size = 4;
+
+            double **q = new double*[states_num];
+            for (int i = 0; i < states_num; i++) {
+                q[i] = new double[actions_size];
+                for (int j = 0; j < actions_size; j++) {
+                    in >> q[i][j];
+                }
+            }
+
+            agent->set_q_table(q, states_num, actions_size);
+            agent->set_learning_file(filename);
+
+            for (int i = 0; i < states_num; i++)
+                delete[] q[i];
+
+            delete[] q;
+        }
+    }
 }
 
 void MainWindow::set_ui_enabled(bool val)
@@ -759,6 +927,7 @@ void MainWindow::on_create_proj_triggered()
                 connect(scene, &RL_scene::update_settings, this, &MainWindow::onScene_selection_changed);
                 connect(scene, &RL_scene::learning_finished, this, &MainWindow::display_learning_charts);
                 connect(scene, &RL_scene::update_logs, this, &MainWindow::display_all_learning_logs);
+                connect(scene, &RL_scene::save_learning, this, &MainWindow::save_agents_q_tabs);
 
                 scene->setSceneRect(0, 0, w.get_width() * SCALE_FACTOR, w.get_height() * SCALE_FACTOR);
                 ui->environment->setScene(scene);
@@ -970,6 +1139,7 @@ void MainWindow::on_start_learning_triggered()
             connect(trainer, &QLearningTrainer::update_logs, this, &MainWindow::display_learning_logs_by_step);
             connect(trainer, &QLearningTrainer::training_finished, this, &MainWindow::display_learning_charts);
             connect(trainer, &QLearningTrainer::scene_disabled, scene, &RL_scene::set_training);
+            connect(trainer, &QLearningTrainer::save_learning, this, &MainWindow::save_agents_q_tabs, Qt::QueuedConnection);
 
             training_thread->start();
 
