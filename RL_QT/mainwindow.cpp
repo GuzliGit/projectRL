@@ -119,11 +119,15 @@ void MainWindow::setup_widgets()
 
 QPushButton * MainWindow::create_editor_panel_button(QString btn_name, int btn_w, int btn_h, QString icon_path, QSize icon_size, QWidget *parent)
 {
+    QVBoxLayout *new_layout = new QVBoxLayout;
+    new_layout->setSpacing(5);
+    new_layout->setContentsMargins(5, 5, 5, 5);
+
     QPushButton *btn = new QPushButton(parent);
     btn->setFixedSize(btn_w, btn_h);
     btn->setIcon(QIcon(icon_path));
     btn->setIconSize(icon_size);
-    btn->setLayout(new QVBoxLayout);
+    btn->setLayout(new_layout);
 
     QLabel *temp = new QLabel(btn_name);
     temp->setAlignment(Qt::AlignCenter | Qt::AlignBottom);
