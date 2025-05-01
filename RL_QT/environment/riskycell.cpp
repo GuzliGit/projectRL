@@ -55,30 +55,17 @@ void RiskyCell::set_stuck_chance(int val)
 
 void RiskyCell::update_status(bool has_agent)
 {
-    if (!has_agent && is_stucked)
+    if (has_agent)
     {
-        is_stucked = false;
-        update_current_appearance();
-        return;
-    }
-    else if (!has_agent)
-        return;
-
-    int random_val = dist(rng);
-    if (random_val < stuck_chance)
-    {
-        if (!is_stucked)
-            update_current_appearance();
-
-        is_stucked = true;
+        int random_val = dist(rng);
+        is_stucked = (random_val < stuck_chance);
     }
     else
     {
-        if (is_stucked)
-            update_current_appearance();
-
         is_stucked = false;
     }
+
+    update_current_appearance();
 }
 
 void RiskyCell::reset()

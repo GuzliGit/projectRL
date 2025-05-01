@@ -19,6 +19,10 @@
   <property name="windowTitle">
    <string>RL studio</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/img/img/MainIcon.svg</normaloff>:/img/img/MainIcon.svg</iconset>
+  </property>
   <property name="styleSheet">
    <string notr="true">/*Стиль для основы*/
 QWidget {
@@ -121,22 +125,7 @@ QSplitter::handle {
 }
 
 /* Стили для выпадающих списков */
-QComboBox {
-    background: #393939;
-    border: 1px solid #454545;
-    border-radius: 4px;
-    padding: 4px;
-    min-width: 100px;
-}
-
-QComboBox::drop-down {
-    border: none;
-    width: 20px;
-}
-
 QComboBox QAbstractItemView {
-    background: #393939;
-    border: 1px solid #4285f4;
     selection-background-color: #4285f4;
 }
 
@@ -252,7 +241,14 @@ QMenuBar::item:selected {
 QMenuBar::item:pressed {
     background: #3275e4;
 }
-</string>
+
+/* Стили для подсказок */
+QToolTip {
+    background-color: #333333;
+    color: white;
+    padding: 5px;
+    border-radius: 3px;
+}</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QGraphicsView" name="environment">
@@ -426,7 +422,7 @@ QMenuBar::item:pressed {
     <string>Перейти к центру среды</string>
    </property>
    <property name="menuRole">
-    <enum>QAction::NoRole</enum>
+    <enum>QAction::MenuRole::NoRole</enum>
    </property>
   </action>
   <action name="delete_obj">
@@ -500,7 +496,7 @@ QMenuBar::item:pressed {
     <string>Визуализировать</string>
    </property>
    <property name="menuRole">
-    <enum>QAction::NoRole</enum>
+    <enum>QAction::MenuRole::NoRole</enum>
    </property>
   </action>
   <action name="stop_learning">
@@ -512,7 +508,7 @@ QMenuBar::item:pressed {
     <string>Остановить</string>
    </property>
    <property name="menuRole">
-    <enum>QAction::NoRole</enum>
+    <enum>QAction::MenuRole::NoRole</enum>
    </property>
   </action>
  </widget>

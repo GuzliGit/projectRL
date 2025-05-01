@@ -530,7 +530,7 @@ void MainWindow::setup_q_learn_panel()
 
     start_epsilon_spin = new QDoubleSpinBox();
     start_epsilon_spin->setWrapping(true);
-    start_epsilon_spin->setRange(0.1, 1.0);
+    start_epsilon_spin->setRange(0.05, 1.0);
     start_epsilon_spin->setSingleStep(0.05);
     start_epsilon_spin->setValue(1.0);
     start_epsilon_spin->setAlignment(Qt::AlignCenter);
@@ -780,7 +780,7 @@ void MainWindow::save_agents_q_tabs(QVector<double**> q_tables,  QList<AgentObj*
     QDateTime current_time = QDateTime::currentDateTime();
     QString timestamp = current_time.toString("yyyyMMdd_hhmmss");
 
-    for (int i = 0; i < q_tables.size(); i++)
+    for (int i = 0; i < agents.size(); i++)
     {
         QString filename;
 
@@ -794,6 +794,7 @@ void MainWindow::save_agents_q_tabs(QVector<double**> q_tables,  QList<AgentObj*
         else
         {
             filename = agents[i]->get_learning_file_path();
+            qDebug() << filename << i;
         }
 
         QFile file(filename);
@@ -816,6 +817,9 @@ void MainWindow::save_agents_q_tabs(QVector<double**> q_tables,  QList<AgentObj*
                 out << q_table[s][a];
             }
         }
+
+        agents[i]->set_q_table(q_table, state_size, actions_size);
+        agents[i]->set_learning_file(filename);
 
         file.close();
     }
@@ -1143,7 +1147,7 @@ void MainWindow::on_start_learning_triggered()
             connect(trainer, &QLearningTrainer::update_logs, this, &MainWindow::display_learning_logs_by_step);
             connect(trainer, &QLearningTrainer::training_finished, this, &MainWindow::display_learning_charts);
             connect(trainer, &QLearningTrainer::scene_disabled, scene, &RL_scene::set_training);
-            connect(trainer, &QLearningTrainer::save_learning, this, &MainWindow::save_agents_q_tabs, Qt::QueuedConnection);
+            connect(trainer, &QLearningTrainer::save_learning, this, &MainWindow::save_agents_q_tabs, Qt::BlockingQueuedConnection);
 
             training_thread->start();
 

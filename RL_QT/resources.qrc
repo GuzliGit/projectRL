@@ -25,6 +25,7 @@
         <file>img/RiskyCellStucked.svg</file>
         <file>img/RiskyCellFreeWithShadow.svg</file>
         <file>img/RiskyCellFree.svg</file>
+        <file>img/MainIcon.svg</file>
     </qresource>
     <qresource prefix="/font">
         <file>fonts/RobotoCondensed-Regular.ttf</file>

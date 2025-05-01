@@ -75,9 +75,9 @@ void QLearningTrainer::start_training(double alpha_t, double gamma_t, double eps
 
         emit update_logs(episode_rewards, k);
 
-        if (epsilon_t < 0.1)
+        if (epsilon_t < 0.05)
         {
-            epsilon_t = 0.1;
+            epsilon_t = 0.05;
         }
         else
         {

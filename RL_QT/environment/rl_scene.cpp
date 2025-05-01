@@ -797,9 +797,9 @@ void RL_scene::start_qlearn(double alpha_t, double gamma_t, double epsilon_t, in
             train();
         }
 
-        if (epsilon_t < 0.1)
+        if (epsilon_t < 0.05)
         {
-            epsilon_t = 0.1;
+            epsilon_t = 0.05;
         }
         else
         {
@@ -939,9 +939,32 @@ signed char RL_scene::execute_action(int agent_id, QPointF new_pos)
     if (all_agents[agent_id]->is_done())
         return 0;
 
-    CellItem *cell = dynamic_cast<CellItem*>(this->items(new_pos).first());
+    CellItem *current_dynamic_cell = nullptr;
+    for (auto item : dynamic_cells)
+    {
+        if (all_agents[agent_id]->pos() == item->pos())
+        {
+            current_dynamic_cell = item;
+            break;
+        }
+    }
 
-    if (all_agents[agent_id]->get_goal()->pos() == new_pos)
+    CellItem *cell = dynamic_cast<CellItem*>(this->items(new_pos).first()); 
+
+    if (current_dynamic_cell && current_dynamic_cell->get_type() == CellType::Risky)
+    {
+        if (current_dynamic_cell->is_walkable())
+        {
+            if (cell && cell->is_walkable())
+            {
+                all_agents[agent_id]->setPos(new_pos);
+                return RISKY_REWARD;
+            }
+        }
+        qDebug() << STUCK_REWARD << agent_id;
+        return STUCK_REWARD;
+    }
+    else if (all_agents[agent_id]->get_goal()->pos() == new_pos)
     {
         all_agents[agent_id]->setPos(new_pos);
         return GOAL_REWARD;
@@ -971,6 +994,7 @@ signed char RL_scene::execute_action(int agent_id, QPointF new_pos)
                 all_agents[agent_id]->setPos(new_pos);
                 return RISKY_REWARD;
             }
+            qDebug() << STUCK_REWARD << agent_id;
             return STUCK_REWARD;
             break;
         }

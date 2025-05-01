@@ -9,8 +9,8 @@ int main(int argc, char *argv[])
         qputenv("QT_QPA_PLATFORM", "xcb");
     }
 #endif
-    QApplication::setStyle(QStyleFactory::create("Fusion")); // Современный стиль
-    QApplication::setPalette(QApplication::style()->standardPalette()); // Сброс палитры
+    QApplication::setStyle(QStyleFactory::create("Fusion"));
+    QApplication::setPalette(QApplication::style()->standardPalette());
 
     QPalette darkPalette;
     darkPalette.setColor(QPalette::Window, QColor(53, 53, 53));
