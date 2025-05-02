@@ -15,7 +15,7 @@
 ### Linux
 ```bash
 git clone git@github.com:GuzliGit/projectRL.git
-mkdri projectRL/RL_QT/build
+mkdir projectRL/RL_QT/build
 cd projectRL/RL_QT/build
 qmake6 ../RL_QT.pro
 make
