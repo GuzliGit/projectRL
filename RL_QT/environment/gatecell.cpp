@@ -58,21 +58,20 @@ void GateCell::update_status(bool has_agent)
     if (has_agent)
         return;
 
+    bool old_status = is_blocked;
+
     int random_val = dist(rng);
     if (random_val < closing_chance)
     {
-        if (!is_blocked)
-            update_current_appearance();
-
         is_blocked = true;
     }
     else
     {
-        if (is_blocked)
-            update_current_appearance();
-
         is_blocked = false;
     }
+
+    if (old_status != is_blocked)
+        update_current_appearance();
 }
 
 void GateCell::reset()
