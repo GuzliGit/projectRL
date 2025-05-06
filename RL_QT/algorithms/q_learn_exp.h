@@ -5,6 +5,7 @@ extern "C" {
 #endif
 
 #define BUFFER_SIZE 1000
+#define BATCH_SIZE 75
 
 typedef struct
 {

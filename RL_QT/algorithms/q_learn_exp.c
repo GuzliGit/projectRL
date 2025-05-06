@@ -81,23 +81,29 @@ void train()
             continue;
         }
 
-        short id = rand() % current_buf_size;
-        Exp_buffer exp = agents[i].buf[id];
-
-        double max_q_next = 0.0;
-        if (!exp.done)
+        for (int j = 0; j < BATCH_SIZE; j++)
         {
-            max_q_next = agents[i].Q[exp.next_state][0];
-            for (int j = 1; j < max_actions; j++)
+            if (j > current_buf_size)
+                break;
+
+            short id = rand() % current_buf_size;
+            Exp_buffer exp = agents[i].buf[id];
+
+            double max_q_next = 0.0;
+            if (!exp.done)
             {
-                if (agents[i].Q[exp.next_state][j] > max_q_next)
+                max_q_next = agents[i].Q[exp.next_state][0];
+                for (int j = 1; j < max_actions; j++)
                 {
-                    max_q_next = agents[i].Q[exp.next_state][j];
+                    if (agents[i].Q[exp.next_state][j] > max_q_next)
+                    {
+                        max_q_next = agents[i].Q[exp.next_state][j];
+                    }
                 }
             }
-        }
 
-        agents[i].Q[exp.state][exp.action] += alpha_p * (exp.reward + gamma_p * max_q_next - agents[i].Q[exp.state][exp.action]);
+            agents[i].Q[exp.state][exp.action] += alpha_p * (exp.reward + gamma_p * max_q_next - agents[i].Q[exp.state][exp.action]);
+        }
     }
 }
 
