@@ -861,7 +861,6 @@ void RL_scene::set_actions_get_rewards(char *actions, signed char *rewards)
                 break;
             }
         }
-
         return;
     }
 
@@ -915,19 +914,13 @@ signed char RL_scene::execute_action(int agent_id, QPointF new_pos)
 {
     if (agent_id == 0)
     {
-        for (auto item : dynamic_cells)
-        {
-            bool has_agent = false;
-            for (int i = 0; i < all_agents.size(); i++)
-            {
-                if (all_agents[i]->pos() == item->pos())
-                {
-                    has_agent = true;
-                    break;
-                }
-            }
+        agents_pos.clear();
+        for (auto* agent : all_agents)
+            agents_pos.insert(QPair<int, int>{agent->x(), agent->y()});
 
-            item->update_status(has_agent);
+        for (auto it = dynamic_cells.begin(); it != dynamic_cells.end(); ++it) {
+            bool has_agent = agents_pos.contains(it.key());
+            it.value()->update_status(has_agent, is_visualize_mod);
         }
     }
 
@@ -940,16 +933,12 @@ signed char RL_scene::execute_action(int agent_id, QPointF new_pos)
         return 0;
 
     CellItem *current_dynamic_cell = nullptr;
-    for (auto item : dynamic_cells)
-    {
-        if (all_agents[agent_id]->pos() == item->pos())
-        {
-            current_dynamic_cell = item;
-            break;
-        }
-    }
+    QPointF current_agent_point = all_agents[agent_id]->pos();
+    QPair<int, int> current_agent_pos = QPair<int, int>{current_agent_point.x(), current_agent_point.y()};
+    if (dynamic_cells.contains(current_agent_pos))
+        current_dynamic_cell = dynamic_cells[current_agent_pos];
 
-    CellItem *cell = dynamic_cast<CellItem*>(this->items(new_pos).first()); 
+    CellItem *cell = dynamic_cast<CellItem*>(this->items(new_pos).first());
 
     if (current_dynamic_cell && current_dynamic_cell->get_type() == CellType::Risky)
     {
@@ -961,7 +950,6 @@ signed char RL_scene::execute_action(int agent_id, QPointF new_pos)
                 return RISKY_REWARD;
             }
         }
-        qDebug() << STUCK_REWARD << agent_id;
         return STUCK_REWARD;
     }
     else if (all_agents[agent_id]->get_goal()->pos() == new_pos)
@@ -994,7 +982,6 @@ signed char RL_scene::execute_action(int agent_id, QPointF new_pos)
                 all_agents[agent_id]->setPos(new_pos);
                 return RISKY_REWARD;
             }
-            qDebug() << STUCK_REWARD << agent_id;
             return STUCK_REWARD;
             break;
         }
@@ -1046,13 +1033,20 @@ void RL_scene::get_agents_done_status(char *dones)
     }
 }
 
-void RL_scene::prepare_dynamic_cells()
+void RL_scene::prepare_scene_objs()
 {
     dynamic_cells.clear();
+    agents_pos.clear();
+
     for (auto cell : all_cells)
     {
         if (cell->get_type() == CellType::Gate || cell->get_type() == CellType::Risky)
-            dynamic_cells.append(cell);
+            dynamic_cells.insert(QPair<int, int>{cell->x(), cell->y()}, cell);
+    }
+
+    for (auto agent : all_agents)
+    {
+        agents_pos.insert(QPair<int, int>{agent->x(), agent->y()});
     }
 }
 

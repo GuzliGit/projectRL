@@ -53,7 +53,7 @@ void GateCell::set_closing_chance(int val)
     closing_chance = val;
 }
 
-void GateCell::update_status(bool has_agent)
+void GateCell::update_status(bool has_agent, bool visualize)
 {
     if (has_agent)
         return;
@@ -70,7 +70,7 @@ void GateCell::update_status(bool has_agent)
         is_blocked = false;
     }
 
-    if (old_status != is_blocked)
+    if (old_status != is_blocked && visualize)
         update_current_appearance();
 }
 

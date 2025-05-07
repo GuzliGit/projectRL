@@ -33,7 +33,7 @@ public:
     virtual void update_cell_appearance();
     virtual bool is_walkable() const { return false; };
     virtual void reset() { return; }
-    virtual void update_status(bool has_agent) { if (has_agent) update_cell_appearance(); return; }
+    virtual void update_status(bool has_agent, bool visualize) { if (has_agent && visualize) update_cell_appearance(); return; }
 
 private:
     int width;

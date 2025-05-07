@@ -1138,7 +1138,7 @@ void MainWindow::on_start_learning_triggered()
             trainer = new QLearningTrainer(scene);            
 
             scene->set_training(true);
-            scene->prepare_dynamic_cells();
+            scene->prepare_scene_objs();
             set_ui_enabled(false);
 
             trainer->moveToThread(training_thread);
@@ -1162,7 +1162,7 @@ void MainWindow::on_start_learning_triggered()
             ui->log_panel->clear();
             ui->log_panel->appendPlainText(QString("Начало обучения: [%1]").arg(QDateTime::currentDateTime().toString()));
 
-            scene->prepare_dynamic_cells();
+            scene->prepare_scene_objs();
             scene->start_qlearn(alpha_spin->value(), gamma_spin->value(), start_epsilon_spin->value(), episode_spin->value());
         }
 

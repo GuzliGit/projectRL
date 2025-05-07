@@ -15,6 +15,7 @@
 
 #include <QGraphicsScene>
 #include <QPointF>
+#include <QHash>
 
 enum TrainAlgorithms
 {
@@ -44,7 +45,7 @@ public:
     void update_appearance();
     bool is_correct_environment();
     void start_qlearn(double alpha_t, double gamma_t, double epsilon_t, int episodes_count);
-    void prepare_dynamic_cells();
+    void prepare_scene_objs();
 
 protected:
     void wheelEvent(QGraphicsSceneWheelEvent *event) override;
@@ -90,7 +91,8 @@ private:
     QGraphicsRectItem *selection_rect = nullptr;
     QList<CellItem*> all_cells;
     QList<AgentObj*> all_agents;
-    QList<CellItem*> dynamic_cells;
+    QHash<QPair<int, int>, CellItem*> dynamic_cells;
+    QSet<QPair<int, int>> agents_pos;
     QList<CellItem*> selected_cells;
     QList<AgentObj*> selected_agents;
 

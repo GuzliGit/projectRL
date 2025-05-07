@@ -53,7 +53,7 @@ void RiskyCell::set_stuck_chance(int val)
     stuck_chance = val;
 }
 
-void RiskyCell::update_status(bool has_agent)
+void RiskyCell::update_status(bool has_agent, bool visualize)
 {
     bool old_status = is_stucked;
 
@@ -67,7 +67,7 @@ void RiskyCell::update_status(bool has_agent)
         is_stucked = false;
     }
 
-    if (old_status != is_stucked)
+    if (old_status != is_stucked && visualize)
         update_current_appearance();
 }
 

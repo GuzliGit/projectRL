@@ -16,7 +16,7 @@ public:
     virtual bool is_walkable() const override { return !is_blocked; }
     int get_closing_chance();
     void set_closing_chance(int val);
-    virtual void update_status(bool has_agent) override;
+    virtual void update_status(bool has_agent, bool visualize) override;
     virtual void reset() override;
 
 private:
