@@ -5,6 +5,7 @@ extern "C" {
 #endif
 
 #define BUFFER_SIZE 1000
+#define ACTIONS_LIMIT 1000
 #define BATCH_SIZE 75
 
 typedef struct
@@ -19,7 +20,8 @@ typedef struct
 typedef struct
 {
     double **Q;
-    short current_buf_size;
+    unsigned int current_buf_size;
+    short actions_count;
     Exp_buffer *buf;
 } Q_Agent;
 
@@ -43,13 +45,11 @@ void free_qlearn();
 
 char all_done();
 
-void reset_experience_buffer();
-
 void set_epsilon(double new_val);
 
 double **get_q_table(short agent_id);
 
-short get_current_buf_size(short agent_id);
+unsigned int get_current_buf_size(short agent_id);
 
 char is_actions_limit(int agent_id);
 

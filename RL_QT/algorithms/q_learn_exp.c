@@ -30,6 +30,7 @@ void init_qlearn(short state_size_t, short agents_count_t, double alpha_t, doubl
         }
 
         agents[i].current_buf_size = 0;
+        agents[i].actions_count = 0;
         agents[i].buf = shared_buffer + BUFFER_SIZE * i;
     }
 }
@@ -41,6 +42,7 @@ void choose_actions(short *states, char *actions)
         if ((double)rand() / RAND_MAX < epsilon_p)
         {
             actions[i] = rand() % max_actions;
+            agents[i].actions_count++;
             continue;
         }
 
@@ -54,6 +56,7 @@ void choose_actions(short *states, char *actions)
         }
 
         actions[i] = best;
+        agents[i].actions_count++;
     }
 }
 
@@ -61,13 +64,9 @@ void store_experience(short *states, char *actions, signed char *rewards, short 
 {
     for (int i = 0; i < agents_count; i++)
     {
-        short buf_id = agents[i].current_buf_size;
-        if (buf_id < BUFFER_SIZE)
-        {
-            agents[i].buf[buf_id] = (Exp_buffer){states[i], actions[i], rewards[i], next_states[i], dones[i]};
-            agents[i].current_buf_size++;
-
-        }
+        short buf_id = agents[i].current_buf_size % BUFFER_SIZE;
+        agents[i].buf[buf_id] = (Exp_buffer){states[i], actions[i], rewards[i], next_states[i], dones[i]};
+        agents[i].current_buf_size++;
     }
 }
 
@@ -75,18 +74,16 @@ void train()
 {
     for(int i = 0; i < agents_count; i++)
     {
-        short current_buf_size = agents[i].current_buf_size;
-        if (current_buf_size == 0 || current_buf_size == BUFFER_SIZE)
+        short buffer_size = (agents[i].current_buf_size >= BUFFER_SIZE) ? BUFFER_SIZE : agents[i].current_buf_size;
+
+        if (buffer_size < BATCH_SIZE)
         {
             continue;
         }
 
         for (int j = 0; j < BATCH_SIZE; j++)
         {
-            if (j > current_buf_size)
-                break;
-
-            short id = rand() % current_buf_size;
+            short id = rand() % buffer_size;
             Exp_buffer exp = agents[i].buf[id];
 
             double max_q_next = 0.0;
@@ -128,8 +125,8 @@ char all_done()
     short agents_on_limit = 0;
     for (int i = 0; i < agents_count; i++)
     {
-        short current_buf_size = agents[i].current_buf_size;
-        if (current_buf_size > 0 && agents[i].buf[current_buf_size - 1].done)
+        short last_index = (agents[i].current_buf_size - 1) % BUFFER_SIZE;
+        if (agents[i].buf[last_index].done && agents[i].actions_count > 0)
             done_count++;
 
         if (is_actions_limit(i))
@@ -137,17 +134,15 @@ char all_done()
     }
 
     if (done_count == agents_count || agents_on_limit == agents_count)
+    {
+        for (int i = 0; i < agents_count; i++)
+        {
+            agents[i].actions_count = 0;
+        }
         return 1;
+    }
     else
         return 0;
-}
-
-void reset_experience_buffer()
-{
-    for (int i = 0; i < agents_count; i++)
-    {
-        agents[i].current_buf_size = 0;
-    }
 }
 
 void set_epsilon(double new_val)
@@ -163,17 +158,17 @@ double **get_q_table(short agent_id)
     return agents[agent_id].Q;
 }
 
-short get_current_buf_size(short agent_id)
+unsigned int get_current_buf_size(short agent_id)
 {
     if (agent_id >= agents_count || agent_id < 0)
         return -1;
 
-    return agents[agent_id].current_buf_size;
+    return agents[agent_id].current_buf_size > BUFFER_SIZE ? BUFFER_SIZE : agents[agent_id].current_buf_size;
 }
 
 char is_actions_limit(int agent_id)
 {
-    if (agents[agent_id].current_buf_size >= BUFFER_SIZE)
+    if (agents[agent_id].actions_count >= ACTIONS_LIMIT)
         return 1;
 
     return 0;

@@ -41,7 +41,6 @@ void QLearningTrainer::start_training(double alpha_t, double gamma_t, double eps
     for (int k = 0; k < episodes_count; k++)
     {
         QMetaObject::invokeMethod(m_scene, "reset_env", Qt::BlockingQueuedConnection);
-        reset_experience_buffer();
 
         if (cancel_requested)
             break;
@@ -60,7 +59,11 @@ void QLearningTrainer::start_training(double alpha_t, double gamma_t, double eps
             }
 
             store_experience(states, actions, rewards, next_states, dones);
-            train();
+
+            if (get_current_buf_size(0) >= BATCH_SIZE)
+            {
+                train();
+            }
 
             if (cancel_requested)
                 break;

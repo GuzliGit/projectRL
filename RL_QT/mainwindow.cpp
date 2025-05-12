@@ -918,17 +918,31 @@ void MainWindow::on_create_proj_triggered()
     {
         if (scene->width() > 0)
         {
-            QMessageBox::StandardButton reply;
-            reply = QMessageBox::question(this, "Подтверждение", "Сохранить изменения и перейти к новому проекту?");
+            QMessageBox replay_win(this);
+            replay_win.setWindowTitle("Подтверждение");
+            replay_win.setText("Сохранить изменения и перейти к новому проекту?");
+            replay_win.setIcon(QMessageBox::Question);
 
-            if (reply == QMessageBox::Yes)
+            QStyle* style = QApplication::style();
+            QPushButton* no_but_btn = replay_win.addButton("Перейти без сохранения", QMessageBox::ResetRole);
+            no_but_btn->setIcon(style->standardIcon(QStyle::SP_DialogAbortButton));
+            QPushButton* yes_btn = replay_win.addButton("Да", QMessageBox::YesRole);
+            yes_btn->setIcon(style->standardIcon(QStyle::SP_DialogYesButton));
+            QPushButton* no_btn = replay_win.addButton("Нет", QMessageBox::NoRole);
+            no_btn->setIcon(style->standardIcon(QStyle::SP_DialogNoButton));
+
+            replay_win.exec();
+
+            if (replay_win.clickedButton() == yes_btn || replay_win.clickedButton() == no_but_btn)
             {
                 scene->clear_selection();
                 charts_tab->clear();
                 if (scene->is_visualize_status())
                     on_visualize_learning_triggered();
 
-                on_save_proj_triggered();
+                if (replay_win.clickedButton() == yes_btn)
+                    on_save_proj_triggered();
+
                 scene = new RL_scene(0, 0, SCALE_FACTOR, this);
 
                 connect(scene, &RL_scene::selectionChanged, this, &MainWindow::onScene_selection_changed);
@@ -940,9 +954,10 @@ void MainWindow::on_create_proj_triggered()
                 scene->setSceneRect(0, 0, w.get_width() * SCALE_FACTOR, w.get_height() * SCALE_FACTOR);
                 ui->environment->setScene(scene);
                 scene->fill_with_empty_cells();
+                project_path = nullptr;
                 return;
             }
-            else
+            else if (replay_win.clickedButton() == no_btn)
                 return;
         }
 
@@ -1071,17 +1086,29 @@ void MainWindow::on_open_proj_triggered()
 {
     if (scene->width() > 0)
     {
-        QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(this, "Подтверждение", "Сохранить изменения и перейти к новому проекту?");
+        QMessageBox replay_win(this);
+        replay_win.setWindowTitle("Подтверждение");
+        replay_win.setText("Сохранить изменения и перейти к новому проекту?");
+        replay_win.setIcon(QMessageBox::Question);
 
-        if (reply == QMessageBox::Yes)
+        QStyle* style = QApplication::style();
+        QPushButton* no_but_btn = replay_win.addButton("Перейти без сохранения", QMessageBox::ResetRole);
+        no_but_btn->setIcon(style->standardIcon(QStyle::SP_DialogAbortButton));
+        QPushButton* yes_btn = replay_win.addButton("Да", QMessageBox::YesRole);
+        yes_btn->setIcon(style->standardIcon(QStyle::SP_DialogYesButton));
+        QPushButton* no_btn = replay_win.addButton("Нет", QMessageBox::NoRole);
+        no_btn->setIcon(style->standardIcon(QStyle::SP_DialogNoButton));
+
+        replay_win.exec();
+
+        if (replay_win.clickedButton() == yes_btn)
         {
             if (project_path != nullptr)
             {
                 qDebug() << "File saved";
                 save_scene(project_path);
             }
-            else
+            else if (replay_win.clickedButton() == yes_btn)
             {
                 QString filename = QFileDialog::getSaveFileName(this, tr("Сохранить сцену"), QDir::homePath(),
                                                                 tr("Бинарные файлы сцены (*.scn)"));
@@ -1097,7 +1124,7 @@ void MainWindow::on_open_proj_triggered()
                 }
             }
         }
-        else
+        else if (replay_win.clickedButton() == no_btn)
             return;
     }
 

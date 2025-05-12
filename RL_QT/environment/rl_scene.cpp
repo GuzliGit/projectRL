@@ -778,7 +778,6 @@ void RL_scene::start_qlearn(double alpha_t, double gamma_t, double epsilon_t, in
     for (int k = 0; k < episodes_count; k++)
     {
         reset_env();
-        reset_experience_buffer();
 
         while (!all_done())
         {
@@ -794,7 +793,11 @@ void RL_scene::start_qlearn(double alpha_t, double gamma_t, double epsilon_t, in
             }
 
             store_experience(states, actions, rewards, next_states, dones);
-            train();
+
+            if (get_current_buf_size(0) >= BATCH_SIZE)
+            {
+                train();
+            }
         }
 
         if (epsilon_t < 0.05)
